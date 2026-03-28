@@ -176,7 +176,7 @@ tbody tr:hover { background:rgba(37,99,235,0.02); }
             </div>
           </div>
           <table><thead><tr>
-            <th>BQMS Code</th><th>Name</th><th>Spec</th><th>Maker</th><th>Type</th><th>Unit</th>
+            <th>BQMS Code</th><th>Product Name</th><th>Maker</th><th>Type</th><th>Unit</th><th>Stock</th>
           </tr></thead><tbody id="prodBody"></tbody></table>
           <div class="pagination" id="prodPagination"></div>
         </div>
@@ -203,9 +203,9 @@ tbody tr:hover { background:rgba(37,99,235,0.02); }
               <button class="btn btn-primary btn-sm" onclick="loadTransactions()">Search</button>
             </div>
           </div>
-          <table><thead><tr>
-            <th>Date</th><th>RFQ No</th><th>BQMS Code</th><th>Spec</th><th>Maker</th><th>Qty</th><th>Price VND</th><th>Result</th>
-          </tr></thead><tbody id="txBody"></tbody></table>
+          <div style="overflow-x:auto"><table><thead><tr>
+            <th>Date</th><th>RFQ No</th><th>BQMS Code</th><th>Spec</th><th>Type</th><th>Maker</th><th>Qty</th><th>Unit</th><th>Deadline</th><th>Price USD</th><th>Price VND</th><th>Buyer</th><th>Seller</th>
+          </tr></thead><tbody id="txBody"></tbody></table></div>
           <div class="pagination" id="txPagination"></div>
         </div>
       </div>
@@ -343,9 +343,13 @@ async function loadProducts(page) {
   const data = await api(`/products?q=${encodeURIComponent(q)}&page=${prodPage}&limit=50`);
   if (!data) return;
   document.getElementById('prodBody').innerHTML = data.data.map(p => `<tr>
-    <td>${esc(p.bqms_code)}</td><td>${esc(p.product_name)}</td><td>${esc(p.spec)}</td>
-    <td>${esc(p.maker)}</td><td><span class="badge badge-${p.type==='gc'?'green':'blue'}">${esc(p.type||'-')}</span></td><td>${esc(p.unit)}</td>
-  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:40px">No products yet. Run ETL to import data.</td></tr>';
+    <td style="font-size:10px">${esc(p.bqms_code)}</td>
+    <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.product_name)}">${esc(p.product_name)}</td>
+    <td>${esc(p.maker||'-')}</td>
+    <td><span class="badge badge-${p.type==='gc'?'green':'blue'}">${esc(p.type||'-')}</span></td>
+    <td>${esc(p.unit)}</td>
+    <td>${fmt(p.current_stock)}</td>
+  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:40px">No products yet.</td></tr>';
   renderPagination('prodPagination', data, loadProducts);
 }
 
@@ -371,11 +375,15 @@ async function loadTransactions(page) {
   const q = document.getElementById('txSearch')?.value || '';
   const data = await api(`/transactions?q=${encodeURIComponent(q)}&page=${txPage}&limit=50`);
   if (!data) return;
+  const typeBadge = (t) => t ? `<span class="badge badge-${t==='gc'?'green':'blue'}">${esc(t)}</span>` : '-';
   document.getElementById('txBody').innerHTML = data.data.map(t => `<tr>
-    <td>${fmtDate(t.transaction_date)}</td><td>${esc(t.rfq_no)}</td><td>${esc(t.bqms_code)}</td>
-    <td>${esc(t.spec)}</td><td>${esc(t.maker)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.price_vnd)}</td>
-    <td>${esc(t.result||'-')}</td>
-  </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:40px">No transactions yet. Run ETL to import data.</td></tr>';
+    <td>${fmtDate(t.transaction_date)}</td><td>${esc(t.rfq_no)}</td><td style="font-size:10px">${esc(t.bqms_code)}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.spec)}">${esc(t.spec)}</td>
+    <td>${typeBadge(t.type)}</td><td>${esc(t.maker)}</td><td>${fmt(t.quantity)}</td><td>${esc(t.unit||'-')}</td>
+    <td style="font-size:10px">${esc(t.deadline_text||'-')}</td>
+    <td>${t.unit_price_usd?fmt(t.unit_price_usd):'-'}</td><td>${t.unit_price_vnd?fmt(t.unit_price_vnd):'-'}</td>
+    <td>${esc(t.buyer||'-')}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.seller)}">${esc(t.seller||'-')}</td>
+  </tr>`).join('') || '<tr><td colspan="13" style="text-align:center;color:var(--text-3);padding:40px">No transactions yet.</td></tr>';
   renderPagination('txPagination', data, loadTransactions);
 }
 
