@@ -1,0 +1,60 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# ── pytest / coverage ───────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── SQLite databases (runtime data) ─────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Logs ────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ── Secrets & config (contain real paths/passwords) ─────
+config.json
+.env
+*.env.*
+
+# ── Outputs / cache / temp ───────────────────────────────
+outputs/
+cache/
+backups/
+__pycache__/
+
+# ── Bundled Python runtime (large, platform-specific) ───
+python/
+
+# ── Excel / Office temp files ───────────────────────────
+~$*.xlsx
+~$*.xls
+~$*.docx
+*.tmp
+
+# ── OS files ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Claude Code internal ─────────────────────────────────
+.claude/
+
+# ── Sample/test data folders ─────────────────────────────
+Lan bao gia L2/
+Lan bao gia L2_v2/
+Lan bao gia L2_v3/

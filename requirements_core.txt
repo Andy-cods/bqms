@@ -1,0 +1,48 @@
+# BSMQ Tool — Core Requirements (no heavy crawling deps)
+# Install: python -m pip install -r requirements_core.txt
+
+# UI
+streamlit>=1.32
+
+# Excel / Data
+openpyxl>=3.1
+pandas>=2.0
+pillow>=10.0
+
+# File monitoring
+watchdog>=4.0
+
+# Database
+sqlite-utils>=3.30
+
+# Charts
+plotly>=5.0.0
+
+# Google APIs
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+gspread>=5.0.0
+
+# AI
+google-generativeai>=0.5.0
+
+# Browser automation (Tool 4 - PO Tracker)
+selenium>=4.18.0
+webdriver-manager>=4.0.1
+
+# PDF parsing
+pdfplumber>=0.10.0
+
+# Utils
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Windows notifications + credential storage
+win10toast>=0.9; sys_platform == 'win32'
+plyer>=2.1.0
+pywin32>=306; sys_platform == 'win32'
+keyring>=24.0.0; sys_platform == 'win32'
+
+# Backend
+fastapi>=0.110.0
+uvicorn>=0.29.0

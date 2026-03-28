@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSMQ · Ops Center v5</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:   #050708;
+  --s1:   #0a0f16;
+  --s2:   #0f1620;
+  --s3:   #141d2a;
+  --s4:   #192333;
+  --b0:   #101828;
+  --b1:   #182030;
+  --b2:   #1e2d42;
+  --b3:   #263852;
+
+  --green:  #0fe87a; --ga: #0fe87a18; --gb: #0fe87a28;
+  --yellow: #f5c542; --ya: #f5c54218; --yb: #f5c54228;
+  --red:    #f0455a; --ra: #f0455a18; --rb: #f0455a28;
+  --blue:   #3ab8fb; --ba: #3ab8fb18; --bb: #3ab8fb28;
+  --cyan:   #1de9b6; --ca: #1de9b618;
+  --orange: #ff8c42; --oa: #ff8c4218;
+  --violet: #8b7cf8; --va: #8b7cf818;
+  --pink:   #f06292;
+
+  --text:  #d4e4f8;
+  --t2:    #6e8aaa;
+  --t3:    #2e4460;
+  --t4:    #17283a;
+
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --r: 4px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── GRID OVERLAY ── */
+body::before {
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% -10%, #0fe87a07 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 85% 110%, #3ab8fb06 0%, transparent 55%),
+    linear-gradient(rgba(255,255,255,.008) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.008) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+}
+
+.root { position:relative; z-index:1; display:flex; flex-direction:column; height:100%; }
+
+/* ══════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════ */
+header {
+  display: flex; align-items: center; gap: 0;
+  height: 44px; flex-shrink: 0;
+  background: var(--s1);
+  border-bottom: 1px solid var(--b1);
+  padding: 0 16px;
+}
+
+.logo-zone { display:flex; align-items:center; gap:10px; margin-right:24px; }
+.gem {
+  width:26px; height:26px; flex-shrink:0;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--sans); font-weight:900; font-size:9px; color:#000;
+}
+.logo-name { font-family:var(--sans); font-size:13px; font-weight:700; letter-spacing:.3px; }
+.logo-ver  { font-size:7px; color:var(--t3); letter-spacing:2px; margin-left:6px; margin-top:1px; }
+
+/* Tab Nav */
+.nav { display:flex; gap:1px; flex:1; }
+.nb {
+  padding: 0 14px; height:44px; display:flex; align-items:center;
+  font-size:8px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--t2); cursor:pointer; border:none; background:transparent;
+  border-bottom: 2px solid transparent; transition: all .15s;
+  font-family: var(--mono); position:relative;
+}
+.nb:hover { color:var(--text); }
+.nb.on { color:var(--green); border-bottom-color:var(--green); background:var(--ga); }
+.nb .badge {
+  position:absolute; top:8px; right:6px;
+  background:var(--red); color:#fff;
+  font-size:7px; font-weight:700; min-width:14px; height:14px;
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  padding:0 3px; font-family:var(--sans);
+}
+
+.hdr-right { display:flex; align-items:center; gap:12px; margin-left:auto; }
+.live-dot { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pulse 1.8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.5)} }
+.live-lbl { font-size:7px; color:var(--green); letter-spacing:2px; }
+.clk { font-size:11px; color:var(--t2); }
+
+/* ══════════════════════════════════════════════
+   BODY
+══════════════════════════════════════════════ */
+.body { display:flex; flex:1; overflow:hidden; }
+
+/* ── LEFT SIDEBAR (slim icon rail) ── */
+.rail {
+  width:44px; background:var(--s1); border-right:1px solid var(--b1);
+  display:flex; flex-direction:column; align-items:center;
+  padding:8px 0; gap:2px; flex-shrink:0;
+}
+.ri {
+  width:32px; height:32px; border-radius:var(--r);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; cursor:pointer; transition:all .15s;
+  border:1px solid transparent; position:relative;
+}
+.ri:hover { background:var(--s2); border-color:var(--b1); }
+.ri.on { background:var(--ga); border-color:var(--green); }
+.ri-sep { width:20px; height:1px; background:var(--b1); margin:4px 0; }
+.ri-tip {
+  display:none; position:absolute; left:calc(100% + 8px); top:50%;
+  transform:translateY(-50%);
+  background:var(--s3); border:1px solid var(--b2);
+  border-radius:3px; padding:3px 8px;
+  font-size:8px; color:var(--text); white-space:nowrap; z-index:200;
+  letter-spacing:.3px;
+}
+.ri:hover .ri-tip { display:block; }
+
+/* ── CONTENT ── */
+.content { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.page { display:none; flex:1; overflow-y:auto; padding:12px 14px; gap:10px; flex-direction:column; }
+.page.on { display:flex; }
+.page::-webkit-scrollbar { width:3px; }
+.page::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+
+/* ══════════════════════════════════════════════
+   PRIMITIVES
+══════════════════════════════════════════════ */
+.card {
+  background:var(--s1); border:1px solid var(--b1);
+  border-radius:var(--r); padding:10px 12px;
+  position:relative; overflow:hidden;
+}
+.card-top { position:absolute; top:0; left:0; right:0; height:2px; background:var(--ca,var(--b2)); }
+.clabel {
+  font-size:7px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--t3); margin-bottom:7px;
+  display:flex; align-items:center; gap:6px;
+}
+.clabel::after { content:''; flex:1; height:1px; background:var(--b1); }
+
+.sec {
+  font-size:7px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--t3); display:flex; align-items:center; gap:6px; margin-bottom:6px;
+}
+.sec::after { content:''; flex:1; height:1px; background:var(--b1); }
+
+/* KPI */
+.kpi {
+  background:var(--s1); border:1px solid var(--b1);
+  border-radius:var(--r); padding:9px 11px;
+  position:relative; overflow:hidden;
+}
+.kpi::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse 130% 130% at 110% 110%, var(--kc,transparent), transparent 65%);
+  opacity:.07; pointer-events:none;
+}
+.kpi::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--kc,var(--b2)), transparent);
+}
+.kl { font-size:7px; letter-spacing:1.8px; text-transform:uppercase; color:var(--t3); margin-bottom:3px; }
+.kv { font-family:var(--sans); font-size:26px; font-weight:900; line-height:1; color:var(--kc,var(--green)); }
+.ks { font-size:8px; color:var(--t3); margin-top:2px; }
+.kd { position:absolute; top:8px; right:8px; font-size:8px; font-weight:600; }
+
+/* Grids */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.g5 { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+
+/* Tags */
+.tag { font-size:7px; padding:1px 5px; border-radius:2px; letter-spacing:.3px; font-weight:500; }
+.tg-tm  { background:var(--oa); color:var(--orange); }
+.tg-gc  { background:var(--ba); color:var(--blue); }
+.tg-ok  { background:var(--ga); color:var(--green); }
+.tg-exp { background:var(--ya); color:var(--yellow); }
+.tg-no  { background:var(--ra); color:var(--red); }
+.tg-ai  { background:var(--va); color:var(--violet); }
+.tg-r1  { background:var(--ba); color:var(--blue); }
+.tg-r2  { background:var(--ya); color:var(--yellow); }
+.tg-r3  { background:var(--oa); color:var(--orange); }
+
+/* Progress bar */
+.pb { height:2px; background:var(--b1); border-radius:1px; overflow:hidden; }
+.pbf { height:100%; border-radius:1px; transition:width .4s ease; }
+
+/* ══════════════════════════════════════════════
+   WORKFLOW PIPELINE (main feature)
+══════════════════════════════════════════════ */
+.pipeline {
+  display:flex; gap:0; align-items:stretch;
+  background:var(--s2); border:1px solid var(--b1);
+  border-radius:var(--r); overflow:hidden;
+}
+.pipe-step {
+  flex:1; padding:10px 10px 8px;
+  border-right:1px solid var(--b1);
+  position:relative; cursor:pointer;
+  transition:background .15s;
+}
+.pipe-step:last-child { border-right:none; }
+.pipe-step:hover { background:var(--s3); }
+.pipe-step.active { background:var(--ga); border-right-color:var(--gb); }
+.pipe-step.done { background:var(--ga); }
+.pipe-step.warn { background:var(--ya); }
+.pipe-step.danger { background:var(--ra); }
+
+.pipe-num {
+  font-size:7px; color:var(--t3); letter-spacing:1px; margin-bottom:4px;
+  display:flex; align-items:center; gap:4px;
+}
+.pipe-num-dot {
+  width:14px; height:14px; border-radius:50%; border:1px solid var(--t3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; font-weight:600; flex-shrink:0;
+}
+.active .pipe-num-dot { border-color:var(--green); color:var(--green); background:var(--ga); }
+.done .pipe-num-dot { border-color:var(--green); background:var(--green); color:#000; }
+.warn .pipe-num-dot { border-color:var(--yellow); color:var(--yellow); }
+.danger .pipe-num-dot { border-color:var(--red); color:var(--red); }
+
+.pipe-title { font-size:9px; font-weight:600; margin-bottom:2px; }
+.active .pipe-title { color:var(--green); }
+.warn .pipe-title { color:var(--yellow); }
+.danger .pipe-title { color:var(--red); }
+
+.pipe-sub { font-size:8px; color:var(--t2); line-height:1.4; }
+.pipe-cnt {
+  position:absolute; top:6px; right:8px;
+  font-family:var(--sans); font-size:16px; font-weight:900;
+  color:var(--t3);
+}
+.active .pipe-cnt { color:var(--green); }
+.warn .pipe-cnt { color:var(--yellow); }
+.danger .pipe-cnt { color:var(--red); }
+
+/* ══════════════════════════════════════════════
+   ORDER CARDS (central element)
+══════════════════════════════════════════════ */
+.order-card {
+  background:var(--s2); border:1px solid var(--b1);
+  border-radius:var(--r); padding:9px 10px;
+  position:relative; overflow:hidden;
+  cursor:pointer; transition:all .15s;
+  display:flex; flex-direction:column; gap:5px;
+}
+.order-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:var(--oc,var(--t3));
+}
+.order-card:hover { border-color:var(--b3); }
+.order-card.oc-green { --oc:var(--green); }
+.order-card.oc-yellow { --oc:var(--yellow); }
+.order-card.oc-red { --oc:var(--red); }
+.order-card.oc-blue { --oc:var(--blue); }
+.order-card.oc-orange { --oc:var(--orange); }
+
+.oc-top { display:flex; align-items:center; gap:6px; }
+.oc-rfq { font-size:10px; font-weight:600; color:var(--text); flex:1; font-family:var(--sans); }
+.oc-name { font-size:9px; color:var(--t2); font-style:italic; }
+.oc-meta { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+.oc-spec { font-size:8px; color:var(--t3); flex:1; line-height:1.4; }
+
+/* Decision badge */
+.decision {
+  font-size:7px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  padding:2px 7px; border-radius:2px;
+}
+.dec-yes  { background:var(--ga); color:var(--green); border:1px solid var(--gb); }
+.dec-no   { background:var(--ra); color:var(--red);   border:1px solid var(--rb); }
+.dec-hmm  { background:var(--ya); color:var(--yellow);border:1px solid var(--yb); }
+.dec-wait { background:var(--s3); color:var(--t2);    border:1px solid var(--b2); }
+
+/* Deadline indicator */
+.deadline {
+  font-size:8px; display:flex; align-items:center; gap:3px;
+}
+.dl-urgent { color:var(--red); }
+.dl-warn   { color:var(--yellow); }
+.dl-ok     { color:var(--t2); }
+
+/* Confidence bar */
+.conf-wrap { display:flex; align-items:center; gap:6px; }
+.conf-bar  { flex:1; height:2px; background:var(--b1); border-radius:1px; overflow:hidden; }
+.conf-fill { height:100%; border-radius:1px; }
+.conf-pct  { font-size:8px; color:var(--t3); width:26px; text-align:right; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════
+   VIABILITY SCORE (chìa khoá của v5)
+══════════════════════════════════════════════ */
+.viability {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 8px;
+  background:var(--s3); border-radius:3px;
+  font-size:9px;
+}
+.vi-score {
+  font-family:var(--sans); font-size:20px; font-weight:900; line-height:1;
+  min-width:36px; text-align:center;
+}
+.vi-score.hi  { color:var(--green); }
+.vi-score.mid { color:var(--yellow); }
+.vi-score.lo  { color:var(--red); }
+.vi-factors { flex:1; }
+.vi-factor { display:flex; align-items:center; gap:4px; margin-bottom:2px; }
+.vi-factor:last-child { margin-bottom:0; }
+.vi-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.vi-lbl { font-size:7px; color:var(--t2); flex:1; }
+.vi-val { font-size:7px; color:var(--text); font-weight:500; }
+
+/* ══════════════════════════════════════════════
+   BIDDING ROUND TRACKER (v5 enhanced)
+══════════════════════════════════════════════ */
+.bid-timeline {
+  display:flex; align-items:center; gap:0;
+  margin:6px 0;
+}
+.bt-step {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  position:relative;
+}
+.bt-step:not(:last-child)::after {
+  content:''; position:absolute; right:0; top:9px;
+  width:calc(100% - 22px); height:1px; background:var(--b2);
+  left:22px;
+}
+.bt-step.done::after { background:var(--green); }
+.bt-step.cur::after  { background:linear-gradient(90deg, var(--green), var(--b2)); }
+
+.bt-dot {
+  width:20px; height:20px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:8px; font-weight:700;
+  border:1px solid var(--b2); background:var(--s3); color:var(--t3);
+  flex-shrink:0; z-index:1; transition:all .3s;
+}
+.bt-step.done .bt-dot { background:var(--green); border-color:var(--green); color:#000; }
+.bt-step.cur  .bt-dot { background:var(--yellow); border-color:var(--yellow); color:#000; animation:pulse 1.5s infinite; }
+
+.bt-label { font-size:7px; color:var(--t3); text-align:center; line-height:1.3; }
+.bt-step.done .bt-label { color:var(--green); }
+.bt-step.cur  .bt-label { color:var(--yellow); }
+.bt-price { font-size:8px; font-weight:600; }
+
+/* ══════════════════════════════════════════════
+   CHECKLIST (streamlined)
+══════════════════════════════════════════════ */
+.ci {
+  display:flex; align-items:flex-start; gap:7px;
+  padding:6px 8px; background:var(--s2); border:1px solid var(--b1);
+  border-radius:3px; cursor:pointer; transition:all .15s;
+}
+.ci:hover { border-color:var(--b2); }
+.ci.done { border-color:var(--gb); background:var(--ga); }
+.ci.run  { border-color:var(--yb); background:var(--ya); }
+.ci.err  { border-color:var(--rb); background:var(--ra); }
+.cib {
+  width:14px; height:14px; border-radius:2px;
+  border:1px solid var(--b3); display:flex; align-items:center;
+  justify-content:center; font-size:8px; flex-shrink:0; margin-top:1px;
+}
+.done .cib { background:var(--green); border-color:var(--green); color:#000; }
+.run  .cib { background:var(--yellow); border-color:var(--yellow); color:#000; }
+.err  .cib { background:var(--red); border-color:var(--red); color:#fff; }
+.ci-body { flex:1; }
+.ci-n { font-size:9px; font-weight:500; }
+.done .ci-n { color:var(--green); }
+.run  .ci-n { color:var(--yellow); }
+.err  .ci-n { color:var(--red); }
+.ci-d { font-size:7px; color:var(--t3); margin-top:1px; line-height:1.4; }
+.ci-t { font-size:7px; color:var(--t3); flex-shrink:0; margin-top:2px; }
+
+/* ══════════════════════════════════════════════
+   JOB CARD
+══════════════════════════════════════════════ */
+.jcard {
+  display:flex; flex-direction:column; gap:4px;
+  padding:7px 8px 6px;
+  background:var(--s2); border:1px solid var(--b1);
+  border-radius:3px; position:relative; overflow:hidden; transition:all .15s;
+}
+.jcard::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--jc,var(--t3)); }
+.jcard.running { border-color:var(--yb); background:var(--ya); }
+.jcard.running::before { background:var(--yellow); }
+.jcard.running::after {
+  content:''; position:absolute; top:0; bottom:0; width:35%;
+  background:linear-gradient(90deg,transparent,rgba(245,197,66,.06),transparent);
+  animation:shimmer 1.6s linear infinite;
+}
+@keyframes shimmer { 0%{left:-35%} 100%{left:135%} }
+.jcard.jdone { border-color:var(--gb); background:var(--ga); }
+.jcard.jdone::before { background:var(--green); }
+.jcard.jidle { opacity:.45; }
+.jcard.jerr  { border-color:var(--rb); background:var(--ra); }
+.jcard.jerr::before  { background:var(--red); }
+.jcard.jqueue::before { background:var(--violet); }
+.jcard.jqueue { border-color:var(--va); }
+
+.jc-top { display:flex; align-items:center; gap:5px; }
+.jc-ic  { font-size:11px; flex-shrink:0; }
+.jc-nm  { font-size:9px; font-weight:600; flex:1; }
+.running .jc-nm { color:var(--yellow); }
+.jdone   .jc-nm { color:var(--green); }
+.jerr    .jc-nm { color:var(--red); }
+
+.st { font-size:6px; letter-spacing:1px; text-transform:uppercase; padding:2px 5px; border-radius:2px; flex-shrink:0; }
+.st-run  { background:var(--ya); color:var(--yellow); }
+.st-done { background:var(--ga); color:var(--green); }
+.st-idle { background:var(--s3); color:var(--t3); }
+.st-err  { background:var(--ra); color:var(--red); }
+.st-q    { background:var(--va); color:var(--violet); }
+
+.jc-d  { font-size:8px; color:var(--t2); line-height:1.5; padding-left:16px; }
+.jc-d span { color:var(--t3); }
+.jc-p  { display:flex; align-items:center; gap:5px; padding-left:16px; }
+.jc-acts { display:flex; gap:3px; padding-left:16px; margin-top:1px; }
+
+.abtn {
+  font-size:7px; letter-spacing:.3px; text-transform:uppercase;
+  padding:2px 6px; border-radius:2px;
+  border:1px solid var(--b2); color:var(--t2);
+  cursor:pointer; transition:all .12s; font-family:var(--mono);
+  background:transparent;
+}
+.abtn:hover { color:var(--text); border-color:var(--b3); }
+.abtn.p:hover { color:var(--green); border-color:var(--green); }
+.abtn.d:hover { color:var(--red); border-color:var(--red); }
+
+/* ══════════════════════════════════════════════
+   LOG
+══════════════════════════════════════════════ */
+.log-wrap { display:flex; flex-direction:column; gap:2px; max-height:180px; overflow-y:auto; }
+.log-wrap::-webkit-scrollbar { width:2px; }
+.log-wrap::-webkit-scrollbar-thumb { background:var(--b2); }
+.le {
+  display:flex; align-items:baseline; gap:5px;
+  padding:3px 7px; border-radius:2px; font-size:8px;
+  border-left:2px solid transparent; animation:fin .25s ease;
+}
+@keyframes fin { from{opacity:0;transform:translateX(-3px)} to{opacity:1;transform:translateX(0)} }
+.le.ok   { border-left-color:var(--green);  background:var(--ga); }
+.le.warn { border-left-color:var(--yellow); background:var(--ya); }
+.le.err  { border-left-color:var(--red);    background:var(--ra); }
+.le.info { border-left-color:var(--blue);   background:var(--ba); }
+.le.ai   { border-left-color:var(--violet); background:var(--va); }
+.le.db   { border-left-color:var(--cyan);   background:var(--ca); }
+.le-t    { color:var(--t3); font-size:7px; flex-shrink:0; width:46px; }
+.le-tag  { font-size:6px; padding:1px 3px; border-radius:2px; flex-shrink:0; letter-spacing:.3px; }
+.t-ok    { background:var(--ga); color:var(--green); }
+.t-w     { background:var(--ya); color:var(--yellow); }
+.t-e     { background:var(--ra); color:var(--red); }
+.t-i     { background:var(--ba); color:var(--blue); }
+.t-a     { background:var(--va); color:var(--violet); }
+.t-d     { background:var(--ca); color:var(--cyan); }
+.le-msg  { color:var(--t2); flex:1; line-height:1.4; }
+
+/* ══════════════════════════════════════════════
+   DIFF VIEW
+══════════════════════════════════════════════ */
+.diff-row {
+  display:flex; align-items:center; gap:7px;
+  padding:5px 8px; border-radius:2px; margin-bottom:3px; font-size:8px;
+}
+.diff-row:last-child { margin-bottom:0; }
+.dr-new { background:var(--ga); border-left:2px solid var(--green); }
+.dr-mod { background:var(--ya); border-left:2px solid var(--yellow); }
+.dr-del { background:var(--ra); border-left:2px solid var(--red); }
+.diff-badge { font-size:6px; letter-spacing:.5px; text-transform:uppercase; padding:1px 4px; border-radius:2px; flex-shrink:0; width:28px; text-align:center; }
+.db-new { background:var(--gb); color:var(--green); }
+.db-mod { background:var(--yb); color:var(--yellow); }
+.db-del { background:var(--rb); color:var(--red); }
+.diff-code { color:var(--text); font-weight:500; width:82px; flex-shrink:0; }
+.diff-detail { color:var(--t2); flex:1; }
+
+/* ══════════════════════════════════════════════
+   TABLE
+══════════════════════════════════════════════ */
+.tbl-wrap { overflow-y:auto; border:1px solid var(--b1); border-radius:3px; }
+.tbl-wrap::-webkit-scrollbar { width:2px; }
+.tbl-wrap::-webkit-scrollbar-thumb { background:var(--b2); }
+table { width:100%; border-collapse:collapse; font-size:9px; }
+thead th {
+  position:sticky; top:0; background:var(--s3);
+  padding:6px 8px; text-align:left;
+  font-size:6px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--t3); border-bottom:1px solid var(--b2); font-weight:400;
+}
+tbody tr { border-bottom:1px solid var(--b1); transition:background .1s; }
+tbody tr:hover { background:var(--s2); }
+tbody tr:last-child { border-bottom:none; }
+td { padding:6px 8px; color:var(--t2); }
+td.cod { color:var(--text); font-weight:500; }
+.hl { background:var(--gb); color:var(--green); border-radius:1px; }
+.row-acts { display:none; gap:3px; }
+tbody tr:hover .row-acts { display:flex; }
+.ra {
+  font-size:7px; padding:1px 5px; border-radius:2px;
+  border:1px solid var(--b2); color:var(--t2);
+  cursor:pointer; transition:all .1s; white-space:nowrap;
+}
+.ra:hover { background:var(--ga); color:var(--green); border-color:var(--green); }
+.ra.ra-y:hover { background:var(--ya); color:var(--yellow); border-color:var(--yellow); }
+.ra.ra-r:hover { background:var(--oa); color:var(--orange); border-color:var(--orange); }
+
+/* Search */
+.srch-box {
+  display:flex; align-items:center; gap:7px;
+  background:var(--s2); border:1px solid var(--b2);
+  border-radius:var(--r); padding:7px 10px; transition:border-color .2s;
+}
+.srch-box:focus-within { border-color:var(--green); }
+.srch-in {
+  background:transparent; border:none; outline:none;
+  color:var(--text); font-family:var(--mono); font-size:11px; flex:1;
+}
+.srch-in::placeholder { color:var(--t3); }
+.srch-meta { font-size:8px; color:var(--t3); flex-shrink:0; }
+
+.pill {
+  font-size:7px; letter-spacing:.5px; text-transform:uppercase;
+  padding:3px 8px; border-radius:3px; border:1px solid var(--b2);
+  color:var(--t2); cursor:pointer; transition:all .15s;
+  font-family:var(--mono); background:transparent;
+}
+.pill:hover { border-color:var(--b3); color:var(--text); }
+.pill.on { border-color:var(--green); color:var(--green); background:var(--ga); }
+.pill.yw.on { border-color:var(--yellow); color:var(--yellow); background:var(--ya); }
+.pill.rd.on { border-color:var(--red); color:var(--red); background:var(--ra); }
+.pill.or.on { border-color:var(--orange); color:var(--orange); background:var(--oa); }
+
+/* ══════════════════════════════════════════════
+   MODULE STATUS
+══════════════════════════════════════════════ */
+.mod { display:flex; align-items:center; gap:6px; padding:5px 7px; background:var(--s2); border:1px solid var(--b1); border-radius:3px; }
+.md { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.dg { background:var(--green); animation:pulse 2s infinite; }
+.dy { background:var(--yellow); animation:pulse 1s infinite; }
+.dr { background:var(--red); }
+.dx { background:var(--t3); }
+.mn { font-size:9px; color:var(--t2); flex:1; }
+.mt { font-size:7px; padding:1px 4px; border-radius:2px; letter-spacing:.3px; }
+.mok  { background:var(--ga); color:var(--green); }
+.mrun { background:var(--ya); color:var(--yellow); }
+.midle{ background:var(--s3); color:var(--t3); }
+.merr { background:var(--ra); color:var(--red); }
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+.toast-wrap { position:fixed; bottom:16px; right:16px; display:flex; flex-direction:column; gap:5px; z-index:999; }
+.toast {
+  display:flex; align-items:flex-start; gap:8px;
+  background:var(--s2); border:1px solid var(--b2); border-radius:var(--r);
+  padding:9px 12px; min-width:220px; max-width:280px;
+  animation:tin .25s ease; box-shadow:0 4px 24px rgba(0,0,0,.5);
+}
+@keyframes tin { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.toast-ic { font-size:13px; flex-shrink:0; }
+.toast-body { flex:1; }
+.toast-t { font-size:10px; font-weight:500; color:var(--text); margin-bottom:1px; }
+.toast-m { font-size:8px; color:var(--t2); line-height:1.4; }
+.tok  { border-left:3px solid var(--green); }
+.twarn{ border-left:3px solid var(--yellow); }
+.terr { border-left:3px solid var(--red); }
+.tai  { border-left:3px solid var(--violet); }
+
+/* ══════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════ */
+footer {
+  display:flex; align-items:center; gap:12px;
+  padding:4px 16px; border-top:1px solid var(--b1);
+  font-size:7px; color:var(--t3); letter-spacing:1px;
+  background:var(--s1); flex-shrink:0;
+}
+.fi { display:flex; align-items:center; gap:3px; }
+.blink { animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Scrollbar style */
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- ══ TOPBAR ══ -->
+<header>
+  <div class="logo-zone">
+    <div class="gem">BS</div>
+    <div>
+      <div class="logo-name" style="font-size:12px;">BSMQ Control Center</div>
+    </div>
+    <span class="logo-ver">v5.0</span>
+  </div>
+
+  <div class="nav">
+    <button class="nb on" onclick="goTab('ops',this)">⚡ Ops Center</button>
+    <button class="nb" onclick="goTab('bidding',this)">🎯 Đấu Thầu<span class="badge" id="bid-badge">3</span></button>
+    <button class="nb" onclick="goTab('db',this)">🗄 Database</button>
+    <button class="nb" onclick="goTab('analytics',this)">📈 Analytics</button>
+    <button class="nb" onclick="goTab('system',this)">⚙ System</button>
+  </div>
+
+  <div class="hdr-right">
+    <div style="display:flex;align-items:center;gap:5px;">
+      <div class="live-dot"></div>
+      <span class="live-lbl">LIVE</span>
+    </div>
+    <div class="clk" id="clk">--:--:--</div>
+    <div style="font-size:8px;color:var(--t3);" id="date-lbl">--/--/----</div>
+  </div>
+</header>
+
+<div class="body">
+
+<!-- ══ ICON RAIL ══ -->
+<div class="rail">
+  <div class="ri on" onclick="goSide('ops',this)">⚡<span class="ri-tip">Ops Center</span></div>
+  <div class="ri" onclick="goSide('bidding',this)">🎯<span class="ri-tip">Đấu Thầu</span></div>
+  <div class="ri" onclick="goSide('db',this)">🗄<span class="ri-tip">Database</span></div>
+  <div class="ri" onclick="goSide('analytics',this)">📈<span class="ri-tip">Analytics</span></div>
+  <div class="ri-sep"></div>
+  <div class="ri" onclick="goSide('system',this)">⚙<span class="ri-tip">System</span></div>
+  <div class="ri" onclick="showToast('tai','⚡','ETL Trigger','Đang khởi động ETL pipeline…')">⚡<span class="ri-tip">Trigger ETL</span></div>
+  <div class="ri" onclick="showToast('tok','💾','Backup','Backup manual đang chạy…')">💾<span class="ri-tip">Backup Now</span></div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+<!-- ════════════════════════════════
+     TAB: OPS CENTER (v5 redesign)
+════════════════════════════════ -->
+<div class="page on" id="tab-ops">
+
+  <!-- Row 1: KPI strip -->
+  <div class="g5">
+    <div class="kpi" style="--kc:var(--green)">
+      <div class="kl">Đơn hôm nay</div>
+      <div class="kv" id="k-today">0</div>
+      <div class="ks">nhận được</div>
+      <div class="kd" style="color:var(--green)" id="k-today-d">↑ 0 đủ KH</div>
+    </div>
+    <div class="kpi" style="--kc:var(--yellow)">
+      <div class="kl">Đang xử lý</div>
+      <div class="kv" id="k-proc">2</div>
+      <div class="ks">jobs active</div>
+    </div>
+    <div class="kpi" style="--kc:var(--violet)">
+      <div class="kl">AI Quyết định</div>
+      <div class="kv" id="k-ai">0</div>
+      <div class="ks">phân loại hôm nay</div>
+    </div>
+    <div class="kpi" style="--kc:var(--orange)">
+      <div class="kl">Cần báo giá</div>
+      <div class="kv" id="k-need">5</div>
+      <div class="ks">deadline tuần này</div>
+    </div>
+    <div class="kpi" style="--kc:var(--red)">
+      <div class="kl">Giá hết hạn</div>
+      <div class="kv" id="k-exp">8</div>
+      <div class="ks">cần crawl lại</div>
+    </div>
+  </div>
+
+  <!-- Row 2: PIPELINE (quy trình chính) -->
+  <div>
+    <div class="sec" style="margin-bottom:8px;">Quy Trình Xử Lý Đơn Hàng</div>
+    <div class="pipeline">
+      <div class="pipe-step done" onclick="showToast('info','📥','Nhận đơn','BC BQMS đã sync · 23 đơn mới')">
+        <div class="pipe-num"><div class="pipe-num-dot">1</div>NHẬN ĐƠN</div>
+        <div class="pipe-title">BC BQMS</div>
+        <div class="pipe-sub">OneDrive sync<br>Watchdog active</div>
+        <div class="pipe-cnt">23</div>
+      </div>
+      <div class="pipe-step active" onclick="showToast('ai','🤖','Phân loại','AI đang phân tích 14 đơn chưa quyết định')">
+        <div class="pipe-num"><div class="pipe-num-dot">2</div>ĐÁNH GIÁ</div>
+        <div class="pipe-title">AI Classifier</div>
+        <div class="pipe-sub">Phân tích khả thi<br>+ Lịch sử DB</div>
+        <div class="pipe-cnt">14</div>
+      </div>
+      <div class="pipe-step warn" onclick="showToast('twarn','⚠️','Tìm giá','8 mã chưa có giá hoặc giá hết hạn')">
+        <div class="pipe-num"><div class="pipe-num-dot">3</div>TÌM GIÁ</div>
+        <div class="pipe-title">Price Check</div>
+        <div class="pipe-sub">Alibaba · NCC VN<br>Lịch sử thắng</div>
+        <div class="pipe-cnt">8</div>
+      </div>
+      <div class="pipe-step" onclick="showToast('tok','📄','Auto Fill','Sẵn sàng tạo hồ sơ cho 5 đơn đã xác nhận')">
+        <div class="pipe-num"><div class="pipe-num-dot">4</div>TẠO HỒ SƠ</div>
+        <div class="pipe-title">Auto Fill</div>
+        <div class="pipe-sub">Cam kết · Quotation<br>Excel + PDF</div>
+        <div class="pipe-cnt">5</div>
+      </div>
+      <div class="pipe-step" onclick="showToast('tok','🏆','Nộp AMA','2 đơn chờ nộp Samsung AMA portal')">
+        <div class="pipe-num"><div class="pipe-num-dot">5</div>NỘP THẦU</div>
+        <div class="pipe-title">Samsung AMA</div>
+        <div class="pipe-sub">Upload portal<br>Track vòng</div>
+        <div class="pipe-cnt">2</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: MAIN 3-COL -->
+  <div style="display:grid;grid-template-columns:260px 1fr 200px;gap:10px;flex:1;min-height:0;">
+
+    <!-- COL A: CHECKLIST + JOBS -->
+    <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:2px;">
+
+      <!-- CHECKLIST thủ công -->
+      <div>
+        <div class="sec">Tác vụ thủ công hôm nay</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div class="ci done" onclick="toggleCI(this)">
+            <div class="cib">✓</div>
+            <div class="ci-body">
+              <div class="ci-n">Xem BC BQMS mới</div>
+              <div class="ci-d">23 đơn · Watchdog đã detect</div>
+            </div>
+            <div class="ci-t">08:12</div>
+          </div>
+          <div class="ci done" onclick="toggleCI(this)">
+            <div class="cib">✓</div>
+            <div class="ci-body">
+              <div class="ci-n">Review quyết định AI</div>
+              <div class="ci-d">Override nếu AI sai · 14 đơn</div>
+            </div>
+            <div class="ci-t">08:45</div>
+          </div>
+          <div class="ci run" onclick="toggleCI(this)">
+            <div class="cib">→</div>
+            <div class="ci-body">
+              <div class="ci-n">Confirm giá Alibaba</div>
+              <div class="ci-d">Chọn top-5 · 8 mã cần xác nhận</div>
+            </div>
+            <div class="ci-t">--</div>
+          </div>
+          <div class="ci" onclick="toggleCI(this)">
+            <div class="cib"></div>
+            <div class="ci-body">
+              <div class="ci-n">Upload Samsung AMA</div>
+              <div class="ci-d">2 đơn vòng 1 · click Submit</div>
+            </div>
+            <div class="ci-t">--</div>
+          </div>
+          <div class="ci" onclick="toggleCI(this)">
+            <div class="cib"></div>
+            <div class="ci-body">
+              <div class="ci-n">Review Error Log</div>
+              <div class="ci-d">Fix lỗi tồn đọng cuối ngày</div>
+            </div>
+            <div class="ci-t">17:30</div>
+          </div>
+        </div>
+        <div style="margin-top:5px;">
+          <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--t3);margin-bottom:3px;">
+            <span>TIẾN ĐỘ</span><span id="cl-lbl">2/5</span>
+          </div>
+          <div class="pb"><div class="pbf" id="cl-fill" style="width:40%;background:var(--green);"></div></div>
+        </div>
+      </div>
+
+      <!-- AUTOMATION JOBS -->
+      <div>
+        <div class="sec">Automation Jobs</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+
+          <!-- Watchdog -->
+          <div class="jcard jdone" style="--jc:var(--cyan)">
+            <div class="jc-top">
+              <div class="jc-ic">👁</div>
+              <div class="jc-nm" style="color:var(--cyan)">Watchdog · OneDrive</div>
+              <div class="st st-done">ACTIVE</div>
+            </div>
+            <div class="jc-d">Detect: <span id="wd-ev">3 files</span> · PO + RFQ monitored</div>
+            <div class="jc-acts"><div class="abtn" onclick="showToast('info','👁','Watchdog','Đang giám sát realtime…')">Log</div></div>
+          </div>
+
+          <!-- AI Classifier running -->
+          <div class="jcard running" id="j-ai">
+            <div class="jc-top">
+              <div class="jc-ic">🤖</div>
+              <div class="jc-nm">AI Classifier · PO Filter</div>
+              <div class="st st-run">RUNNING</div>
+            </div>
+            <div class="jc-d">Đang: <span id="ai-cur">QT26015808</span><br>
+              Kết quả: <span id="ai-res" style="color:var(--green)">✅8 · ❌5 · ❓1</span></div>
+            <div class="jc-p">
+              <div class="pb" style="flex:1"><div class="pbf" id="ai-pf" style="width:67%;background:var(--violet);"></div></div>
+              <div style="font-size:8px;color:var(--t3);width:26px;text-align:right;" id="ai-pp">67%</div>
+            </div>
+            <div class="jc-acts">
+              <div class="abtn d" onclick="pauseJob('j-ai')">Pause</div>
+              <div class="abtn" onclick="showToast('ai','🤖','Rules','Conf threshold: 70% · Rules: 18')">Rules</div>
+            </div>
+          </div>
+
+          <!-- Auto Fill running -->
+          <div class="jcard running" id="j-fill">
+            <div class="jc-top">
+              <div class="jc-ic">⚙️</div>
+              <div class="jc-nm">Auto Fill · Excel + PDF</div>
+              <div class="st st-run">RUNNING</div>
+            </div>
+            <div class="jc-d">Job: <span id="fill-job">QT26015802 · Thương mại</span><br>
+              Bước: <span id="fill-step">Điền cam kết… 2/4</span></div>
+            <div class="jc-p">
+              <div class="pb" style="flex:1"><div class="pbf" id="fill-pf" style="width:50%;background:var(--yellow);"></div></div>
+              <div style="font-size:8px;color:var(--t3);width:26px;text-align:right;" id="fill-pp">50%</div>
+            </div>
+            <div class="jc-acts">
+              <div class="abtn d" onclick="pauseJob('j-fill')">Pause</div>
+              <div class="abtn d" onclick="cancelJob('j-fill','Auto Fill')">Cancel</div>
+              <div class="abtn" onclick="showToast('info','⚙️','Queue','Queue: 4 đơn chờ xử lý')">Queue</div>
+            </div>
+          </div>
+
+          <!-- Crawler queued -->
+          <div class="jcard jqueue" id="j-crawl">
+            <div class="jc-top">
+              <div class="jc-ic">🕷</div>
+              <div class="jc-nm" style="color:var(--violet)">Alibaba Crawler</div>
+              <div class="st st-q">QUEUED</div>
+            </div>
+            <div class="jc-d">Queue: <span id="crawl-q">8 mã chưa/hết giá</span><br>ETA: <span id="crawl-eta">~6 phút</span></div>
+            <div class="jc-p">
+              <div class="pb" style="flex:1"><div class="pbf" id="crawl-pf" style="width:0%;background:var(--orange);"></div></div>
+              <div style="font-size:8px;color:var(--t3);width:26px;text-align:right;" id="crawl-pp">0%</div>
+            </div>
+            <div class="jc-acts">
+              <div class="abtn p" onclick="startCrawler()">▶ Start</div>
+              <div class="abtn" onclick="showToast('info','🕷','Config','Delay: 2-5s · Rotate UA')">Config</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- COL B: ORDER DECISION BOARD (trung tâm) -->
+    <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;">
+
+      <!-- ONEDRIVE DIFF (new orders detected) -->
+      <div class="card" style="--ca:var(--blue)">
+        <div class="card-top"></div>
+        <div class="clabel">📡 OneDrive Diff — BC BQMS hôm nay (08:12)</div>
+        <div class="diff-row dr-new">
+          <span class="diff-badge db-new">MỚI</span>
+          <span class="diff-code">QT26015810</span>
+          <span class="diff-detail">TEST JIG SL20 · Thương mại · Maker: SAMSUNG · Hạn: 05/04</span>
+        </div>
+        <div class="diff-row dr-new">
+          <span class="diff-badge db-new">MỚI</span>
+          <span class="diff-code">QT26015811</span>
+          <span class="diff-detail">CABLE ASSY · Thương mại · Maker: MOLEX · Hạn: 03/04</span>
+        </div>
+        <div class="diff-row dr-mod">
+          <span class="diff-badge db-mod">SỬA</span>
+          <span class="diff-code">QT26015802</span>
+          <span class="diff-detail">SL thay đổi: 20 → 35 · Hạn dời: 04/04 → 07/04</span>
+        </div>
+        <div class="diff-row dr-new">
+          <span class="diff-badge db-new">MỚI</span>
+          <span class="diff-code">QT26015812</span>
+          <span class="diff-detail">CONNECTOR JST 4P · Thương mại · Maker: JST · Hạn: 02/04 ⚠️</span>
+        </div>
+      </div>
+
+      <!-- ORDER DECISION BOARD -->
+      <div class="card" style="--ca:var(--violet)">
+        <div class="card-top"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="clabel" style="margin-bottom:0;flex:1">🤖 Quyết Định Báo Giá — Cần xác nhận</div>
+          <div style="display:flex;gap:4px;">
+            <button class="pill on" onclick="setPill(this,'all')">Tất cả</button>
+            <button class="pill or" onclick="setPill(this,'hmm')">❓ Xem lại</button>
+            <button class="pill rd" onclick="setPill(this,'no')">❌ Bỏ qua</button>
+          </div>
+        </div>
+
+        <!-- Order cards -->
+        <div style="display:flex;flex-direction:column;gap:5px;" id="order-board">
+
+          <!-- ✅ THAM GIA — high confidence -->
+          <div class="order-card oc-green">
+            <div class="oc-top">
+              <div class="oc-rfq">QT26015802 · TEST JIG</div>
+              <div class="decision dec-yes">✅ THAM GIA</div>
+              <div class="deadline dl-ok">📅 07/04 · 5 ngày</div>
+            </div>
+            <div class="oc-meta">
+              <span class="tag tg-tm">TM</span>
+              <span class="tag" style="background:var(--ba);color:var(--blue)">SAMSUNG</span>
+              <span style="font-size:8px;color:var(--t2)">SL: 35 EA</span>
+              <span style="font-size:8px;color:var(--t2)">Giá DB: 125đ/cái · ✅ Còn hạn</span>
+            </div>
+            <div class="viability">
+              <div class="vi-score hi">87</div>
+              <div class="vi-factors">
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--green)"></div><div class="vi-lbl">Lịch sử thắng</div><div class="vi-val" style="color:var(--green)">3/4 lần ✓</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--green)"></div><div class="vi-lbl">Giá tham khảo</div><div class="vi-val" style="color:var(--green)">Có · 5★</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--yellow)"></div><div class="vi-lbl">Margin ước tính</div><div class="vi-val" style="color:var(--yellow)">~12%</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div class="abtn p" onclick="showToast('tok','⚙️','Auto Fill','Tạo hồ sơ QT26015802…')">Tạo hồ sơ</div>
+                <div class="abtn" onclick="showToast('info','📁','Folder','outputs/QT26015802/')">Folder</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ❓ XEM LẠI — medium confidence -->
+          <div class="order-card oc-yellow">
+            <div class="oc-top">
+              <div class="oc-rfq">QT26015810 · TEST JIG SL20</div>
+              <div class="decision dec-hmm">❓ XEM LẠI</div>
+              <div class="deadline dl-warn">⚠️ 05/04 · 3 ngày</div>
+            </div>
+            <div class="oc-meta">
+              <span class="tag tg-tm">TM</span>
+              <span class="tag" style="background:var(--ba);color:var(--blue)">SAMSUNG</span>
+              <span style="font-size:8px;color:var(--t2)">SL: 20 EA</span>
+              <span style="font-size:8px;color:var(--yellow)">⚠ Giá hết hạn 45 ngày trước</span>
+            </div>
+            <div class="viability">
+              <div class="vi-score mid">54</div>
+              <div class="vi-factors">
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--green)"></div><div class="vi-lbl">Lịch sử thắng</div><div class="vi-val" style="color:var(--green)">1/2 lần</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--red)"></div><div class="vi-lbl">Giá tham khảo</div><div class="vi-val" style="color:var(--red)">Hết hạn ✗</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--t3)"></div><div class="vi-lbl">Margin ước tính</div><div class="vi-val">Chưa rõ</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div class="abtn p" onclick="startCrawler();showToast('tai','🕷','Crawler','Crawl giá QT26015810…')">Crawl giá</div>
+                <div class="abtn d" onclick="showToast('terr','❌','Bỏ qua','QT26015810 đã đánh dấu bỏ qua')">Bỏ qua</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ❌ BỎ QUA — low viability -->
+          <div class="order-card oc-red" style="opacity:.7;">
+            <div class="oc-top">
+              <div class="oc-rfq">QT26015811 · CABLE ASSY</div>
+              <div class="decision dec-no">❌ BỎ QUA</div>
+              <div class="deadline dl-urgent">🚨 03/04 · 1 ngày</div>
+            </div>
+            <div class="oc-meta">
+              <span class="tag tg-tm">TM</span>
+              <span class="tag" style="background:var(--ba);color:var(--blue)">MOLEX</span>
+              <span style="font-size:8px;color:var(--t2)">SL: 500 EA</span>
+              <span style="font-size:8px;color:var(--red)">✗ Chưa có giá · Chưa từng thắng</span>
+            </div>
+            <div class="viability">
+              <div class="vi-score lo">18</div>
+              <div class="vi-factors">
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--red)"></div><div class="vi-lbl">Lịch sử thắng</div><div class="vi-val" style="color:var(--red)">0/0 lần</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--red)"></div><div class="vi-lbl">Giá tham khảo</div><div class="vi-val" style="color:var(--red)">Không có</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--red)"></div><div class="vi-lbl">Deadline</div><div class="vi-val" style="color:var(--red)">1 ngày ✗</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div class="abtn p" onclick="showToast('twarn','⚠️','Override','QT26015811: bạn xác nhận tham gia?')">Override</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ THAM GIA — new item needs price -->
+          <div class="order-card oc-orange">
+            <div class="oc-top">
+              <div class="oc-rfq">QT26015812 · CONNECTOR JST</div>
+              <div class="decision dec-hmm">❓ CẦN GIÁ</div>
+              <div class="deadline dl-urgent">🚨 02/04 · HÔM NAY</div>
+            </div>
+            <div class="oc-meta">
+              <span class="tag tg-tm">TM</span>
+              <span class="tag" style="background:var(--ba);color:var(--blue)">JST</span>
+              <span style="font-size:8px;color:var(--t2)">SL: 1000 EA</span>
+              <span style="font-size:8px;color:var(--orange)">Giá DB: 12đ/cái · Còn hạn · Margin tốt</span>
+            </div>
+            <div class="viability">
+              <div class="vi-score hi">72</div>
+              <div class="vi-factors">
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--green)"></div><div class="vi-lbl">Giá DB</div><div class="vi-val" style="color:var(--green)">12đ · 3★</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--yellow)"></div><div class="vi-lbl">Deadline</div><div class="vi-val" style="color:var(--red)">HÔM NAY!</div></div>
+                <div class="vi-factor"><div class="vi-dot" style="background:var(--green)"></div><div class="vi-lbl">Lịch sử</div><div class="vi-val" style="color:var(--green)">Tương tự thắng</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div class="abtn p" onclick="showToast('tok','⚙️','Auto Fill','TẠO NGAY QT26015812 — deadline hôm nay!')">🔥 Tạo NGAY</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DATA VALIDATION -->
+      <div class="card" style="--ca:var(--yellow)">
+        <div class="card-top"></div>
+        <div class="clabel">⚠ Data Validation — File đầu vào</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="vi-factor" style="padding:4px 6px;background:var(--ga);border-radius:3px;border:1px solid var(--gb);">
+            <div class="vi-dot" style="background:var(--green)"></div>
+            <div class="vi-lbl" style="font-size:9px;color:var(--green)">File BC BQMS — Đọc được · 23 rows · 12 cols</div>
+          </div>
+          <div class="vi-factor" style="padding:4px 6px;background:var(--ya);border-radius:3px;border:1px solid var(--yb);">
+            <div class="vi-dot" style="background:var(--yellow)"></div>
+            <div class="vi-lbl" style="font-size:9px;color:var(--yellow)">3 rows thiếu SPEC (row 14, 27, 43) — Auto Fill sẽ bỏ qua</div>
+          </div>
+          <div class="vi-factor" style="padding:4px 6px;background:var(--ra);border-radius:3px;border:1px solid var(--rb);">
+            <div class="vi-dot" style="background:var(--red)"></div>
+            <div class="vi-lbl" style="font-size:9px;color:var(--red)">Duplicate: QT26015808 xuất hiện 2 lần (row 7 + 19) — cần xác nhận</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL C: DAILY SUMMARY + QUALITY METRICS -->
+    <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;">
+
+      <!-- Daily Summary -->
+      <div class="card" style="--ca:var(--green)">
+        <div class="card-top"></div>
+        <div class="clabel">📅 Hôm Nay</div>
+        <div class="g2" style="gap:5px;margin-bottom:7px;">
+          <div style="background:var(--s2);border:1px solid var(--b1);border-radius:3px;padding:7px 8px;text-align:center;">
+            <div style="font-family:var(--sans);font-size:20px;font-weight:900;color:var(--green)" id="s-done">0</div>
+            <div style="font-size:7px;color:var(--t3);letter-spacing:1.5px;margin-top:1px;">ĐƠN XONG</div>
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--b1);border-radius:3px;padding:7px 8px;text-align:center;">
+            <div style="font-family:var(--sans);font-size:20px;font-weight:900;color:var(--yellow)">14</div>
+            <div style="font-size:7px;color:var(--t3);letter-spacing:1.5px;margin-top:1px;">CHỜ XỬ LÝ</div>
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--b1);border-radius:3px;padding:7px 8px;text-align:center;">
+            <div style="font-family:var(--sans);font-size:20px;font-weight:900;color:var(--blue)" id="s-win">0</div>
+            <div style="font-size:7px;color:var(--t3);letter-spacing:1.5px;margin-top:1px;">THẮNG THẦU</div>
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--b1);border-radius:3px;padding:7px 8px;text-align:center;">
+            <div style="font-family:var(--sans);font-size:20px;font-weight:900;color:var(--red)" id="s-lose">0</div>
+            <div style="font-size:7px;color:var(--t3);letter-spacing:1.5px;margin-top:1px;">THUA THẦU</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--t3);margin-bottom:3px;">
+          <span>Gemini quota</span><span>14/240</span>
+        </div>
+        <div class="pb"><div class="pbf" style="width:6%;background:var(--violet);"></div></div>
+      </div>
+
+      <!-- QUALITY SCORE — trọng tâm v5 -->
+      <div class="card" style="--ca:var(--orange)">
+        <div class="card-top"></div>
+        <div class="clabel">🎯 Chất Lượng Báo Giá</div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="text-align:center;">
+            <div style="font-family:var(--sans);font-size:34px;font-weight:900;color:var(--orange);line-height:1;">67%</div>
+            <div style="font-size:7px;color:var(--t3);letter-spacing:1px;">WIN RATE</div>
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--t2)">Vòng 1 win</span><span style="color:var(--green)">8/12</span></div>
+            <div class="pb" style="margin-bottom:5px;"><div class="pbf" style="width:67%;background:var(--green);"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--t2)">AI accuracy</span><span style="color:var(--violet)">91%</span></div>
+            <div class="pb" style="margin-bottom:5px;"><div class="pbf" style="width:91%;background:var(--violet);"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--t2)">Giá còn hạn</span><span style="color:var(--cyan)">68%</span></div>
+            <div class="pb"><div class="pbf" style="width:68%;background:var(--cyan);"></div></div>
+          </div>
+        </div>
+
+        <!-- Top reasons lose -->
+        <div style="font-size:7px;color:var(--t3);letter-spacing:1.5px;margin-bottom:4px;">LÝ DO THUA THẦU GẦN NHẤT</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;">
+            <div style="width:3px;height:12px;background:var(--red);border-radius:1px;flex-shrink:0;"></div>
+            <div style="flex:1;color:var(--t2)">Giá cao hơn WA >5%</div>
+            <div style="color:var(--red)">4 lần</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;">
+            <div style="width:3px;height:12px;background:var(--orange);border-radius:1px;flex-shrink:0;"></div>
+            <div style="flex:1;color:var(--t2)">Nộp trễ deadline</div>
+            <div style="color:var(--orange)">2 lần</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;">
+            <div style="width:3px;height:12px;background:var(--yellow);border-radius:1px;flex-shrink:0;"></div>
+            <div style="flex:1;color:var(--t2)">Giá hết hạn, không update</div>
+            <div style="color:var(--yellow)">1 lần</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modules compact -->
+      <div class="card" style="--ca:var(--blue)">
+        <div class="card-top"></div>
+        <div class="clabel">⬡ Modules</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div class="mod"><div class="md dg"></div><div class="mn">Watchdog</div><div class="mt mok">RUN</div></div>
+          <div class="mod"><div class="md dg"></div><div class="mn">Sheets API</div><div class="mt mok">OK</div></div>
+          <div class="mod"><div class="md dy"></div><div class="mn">AI Classifier</div><div class="mt mrun">67%</div></div>
+          <div class="mod"><div class="md dy"></div><div class="mn">Auto Fill</div><div class="mt mrun">50%</div></div>
+          <div class="mod"><div class="md dx"></div><div class="mn">Crawler</div><div class="mt midle">QUEUE</div></div>
+          <div class="mod"><div class="md dg"></div><div class="mn">SQLite FTS5</div><div class="mt mok">5k idx</div></div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="card" style="--ca:var(--green)">
+        <div class="card-top"></div>
+        <div class="clabel">▸ Activity Log</div>
+        <div class="log-wrap" id="log-main">
+          <div class="le ok"><span class="le-t">08:01:04</span><span class="le-tag t-ok">SYS</span><span class="le-msg">BSMQ v5.0 started</span></div>
+          <div class="le info"><span class="le-t">08:01:09</span><span class="le-tag t-i">WATCH</span><span class="le-msg">Watchdog: PO+RFQ monitored</span></div>
+          <div class="le db"><span class="le-t">08:01:14</span><span class="le-tag t-d">DB</span><span class="le-msg">SQLite: 5,000 products · FTS5 ready</span></div>
+          <div class="le ok"><span class="le-t">08:03:22</span><span class="le-tag t-ok">SYNC</span><span class="le-msg">BC BQMS sync: 23 rows · 4 changed</span></div>
+          <div class="le warn"><span class="le-t">08:03:45</span><span class="le-tag t-w">VALID</span><span class="le-msg">3 rows thiếu SPEC · 1 duplicate</span></div>
+          <div class="le ai"><span class="le-t">08:04:01</span><span class="le-tag t-a">AI</span><span class="le-msg">Classifier started: 23 PO items</span></div>
+          <div class="le warn"><span class="le-t">08:04:33</span><span class="le-tag t-w">PRICE</span><span class="le-msg">Expired: 8 mã · queued for crawl</span></div>
+          <div class="le ok"><span class="le-t">08:05:44</span><span class="le-tag t-ok">FILL</span><span class="le-msg">Auto Fill: QT26015802 started</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     TAB: BIDDING (đấu thầu)
+════════════════════════════════ -->
+<div class="page" id="tab-bidding">
+
+  <div class="g4" style="margin-bottom:2px;">
+    <div class="kpi" style="--kc:var(--blue)"><div class="kl">Vòng 1</div><div class="kv">8</div><div class="ks">đơn chờ nộp</div></div>
+    <div class="kpi" style="--kc:var(--yellow)"><div class="kl">Vòng 2</div><div class="kv">3</div><div class="ks">cần giảm giá</div></div>
+    <div class="kpi" style="--kc:var(--orange)"><div class="kl">Vòng 3</div><div class="kv">1</div><div class="ks">deadline HÔM NAY</div></div>
+    <div class="kpi" style="--kc:var(--green)"><div class="kl">Đã thắng</div><div class="kv">8</div><div class="ks">tháng này</div></div>
+  </div>
+
+  <div class="g2">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="sec">Đơn đang active</div>
+
+      <!-- Bid card: VÒNG 3 urgent -->
+      <div class="card oc-red" style="--ca:var(--red);padding:10px;">
+        <div class="card-top"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="flex:1;font-family:var(--sans);font-size:11px;font-weight:700;">QT26015789 · SC-0089-CU</div>
+          <div class="tag tg-r3">VÒNG 3</div>
+          <div style="font-size:8px;color:var(--red);font-weight:600;">🚨 Hôm nay 17:00</div>
+        </div>
+        <div class="bid-timeline">
+          <div class="bt-step done"><div class="bt-dot">1</div><div class="bt-label">V1<br>890đ/kg</div></div>
+          <div class="bt-step done"><div class="bt-dot">2</div><div class="bt-label">V2<br>845đ/kg</div></div>
+          <div class="bt-step cur"><div class="bt-dot">3</div><div class="bt-label">V3<br>Chưa gửi</div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:2px;font-size:9px;">
+          <div style="flex:1;"><span style="color:var(--t3)">Target: </span><span style="color:var(--green);font-weight:600;">~800đ/kg</span></div>
+          <div style="flex:1;"><span style="color:var(--t3)">Giảm V2→V3: </span><span style="color:var(--yellow);">-5.3%</span></div>
+          <div style="flex:1;"><span style="color:var(--t3)">Margin: </span><span style="color:var(--orange);">~8%</span></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px;">
+          <div class="abtn p" onclick="showToast('tok','🏆','AMA','Mở Samsung AMA form…')">🔥 Mở AMA Ngay</div>
+          <div class="abtn" onclick="showToast('ai','🤖','AI Suggest','Giá đề xuất vòng 3: 798–810đ/kg')">AI Gợi ý</div>
+        </div>
+      </div>
+
+      <!-- Bid card: VÒNG 2 -->
+      <div class="card" style="--ca:var(--yellow);padding:10px;">
+        <div class="card-top"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="flex:1;font-family:var(--sans);font-size:11px;font-weight:700;">QT26015802 · TEST JIG</div>
+          <div class="tag tg-r2">VÒNG 2</div>
+          <div style="font-size:8px;color:var(--yellow);">⏰ Còn 2 ngày</div>
+        </div>
+        <div class="bid-timeline">
+          <div class="bt-step done"><div class="bt-dot">1</div><div class="bt-label">V1<br>125đ/cái</div></div>
+          <div class="bt-step cur"><div class="bt-dot">2</div><div class="bt-label">V2<br>Đang chuẩn bị</div></div>
+          <div class="bt-step"><div class="bt-dot">3</div><div class="bt-label">V3<br>--</div></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px;">
+          <div class="abtn p" onclick="showToast('tok','⚙️','Fill','Tạo hồ sơ vòng 2…')">Tạo hồ sơ V2</div>
+          <div class="abtn" onclick="showToast('ai','🤖','AI','Giá đề xuất vòng 2: 112–118đ/cái')">AI Gợi ý</div>
+        </div>
+      </div>
+
+      <!-- Bid card: VÒNG 1 -->
+      <div class="card" style="--ca:var(--blue);padding:10px;">
+        <div class="card-top"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="flex:1;font-family:var(--sans);font-size:11px;font-weight:700;">QT26015812 · CONNECTOR JST</div>
+          <div class="tag tg-r1">VÒNG 1</div>
+          <div style="font-size:8px;color:var(--t2);">📅 Còn 5 ngày</div>
+        </div>
+        <div class="bid-timeline">
+          <div class="bt-step cur"><div class="bt-dot">1</div><div class="bt-label">V1<br>Đang làm</div></div>
+          <div class="bt-step"><div class="bt-dot">2</div><div class="bt-label">V2<br>--</div></div>
+          <div class="bt-step"><div class="bt-dot">3</div><div class="bt-label">V3<br>--</div></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px;">
+          <div class="abtn p" onclick="showToast('tok','⚙️','Fill','Tạo hồ sơ vòng 1 JST…')">Tạo hồ sơ</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right col -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="card" style="--ca:var(--green)">
+        <div class="card-top"></div>
+        <div class="clabel">📈 Stats tháng này</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--text)">Win rate tổng</span><span style="color:var(--green)">67% (8/12)</span></div>
+            <div class="pb"><div class="pbf" style="width:67%;background:var(--green);"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--text)">Tham gia / Nhận</span><span style="color:var(--blue)">12/23 (52%)</span></div>
+            <div class="pb"><div class="pbf" style="width:52%;background:var(--blue);"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--text)">AI accuracy</span><span style="color:var(--violet)">91%</span></div>
+            <div class="pb"><div class="pbf" style="width:91%;background:var(--violet);"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:3px;"><span style="color:var(--text)">Nộp đúng hạn</span><span style="color:var(--cyan)">100%</span></div>
+            <div class="pb"><div class="pbf" style="width:100%;background:var(--cyan);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--ca:var(--red)">
+        <div class="card-top"></div>
+        <div class="clabel">⏰ Deadlines sắp tới</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--ra);border-radius:3px;border:1px solid var(--rb);">
+            <div>🚨</div>
+            <div style="flex:1;font-size:9px;"><div style="color:var(--red);font-weight:600;">QT26015789 · V3</div><div style="color:var(--t2);font-size:8px;">Hôm nay 17:00</div></div>
+            <div class="abtn d" onclick="showToast('terr','⏰','URGENT!','<2 tiếng! Mở AMA ngay')">AMA</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--ya);border-radius:3px;border:1px solid var(--yb);">
+            <div>⚠️</div>
+            <div style="flex:1;font-size:9px;"><div style="color:var(--yellow);font-weight:600;">QT26015802 · V2</div><div style="color:var(--t2);font-size:8px;">03/04 · Còn 2 ngày</div></div>
+            <div class="abtn" onclick="showToast('tok','⚙️','Fill','Tạo hồ sơ V2…')">Chuẩn bị</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--s2);border-radius:3px;border:1px solid var(--b1);">
+            <div>📅</div>
+            <div style="flex:1;font-size:9px;"><div style="color:var(--text);font-weight:500;">QT26015812 · V1</div><div style="color:var(--t2);font-size:8px;">07/04 · Còn 5 ngày</div></div>
+            <div class="abtn" onclick="showToast('tok','⚙️','Fill','Tạo hồ sơ V1 JST…')">Chuẩn bị</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--ca:var(--violet)">
+        <div class="card-top"></div>
+        <div class="clabel">⚡ Gemini Keys</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:5px;padding:3px 0;">
+            <div style="width:4px;height:4px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+            <div style="font-size:8px;color:var(--t2);flex:1;">Key #1 · active</div>
+            <div class="pb" style="flex:1;"><div class="pbf" style="width:23%;background:var(--green);"></div></div>
+            <div style="font-size:8px;color:var(--green);width:30px;text-align:right;">14/60</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;padding:3px 0;">
+            <div style="width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0;"></div>
+            <div style="font-size:8px;color:var(--t2);flex:1;">Key #2</div>
+            <div class="pb" style="flex:1;"><div class="pbf" style="width:0%;"></div></div>
+            <div style="font-size:8px;color:var(--t3);width:30px;text-align:right;">0/60</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;padding:3px 0;">
+            <div style="width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0;"></div>
+            <div style="font-size:8px;color:var(--t2);flex:1;">Key #3</div>
+            <div class="pb" style="flex:1;"><div class="pbf" style="width:0%;"></div></div>
+            <div style="font-size:8px;color:var(--t3);width:30px;text-align:right;">0/60</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-top:1px solid var(--b1);">
+            <div style="width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0;"></div>
+            <div style="font-size:8px;color:var(--t2);flex:1;">Key #4</div>
+            <div class="pb" style="flex:1;"><div class="pbf" style="width:0%;"></div></div>
+            <div style="font-size:8px;color:var(--t3);width:30px;text-align:right;">0/60</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     TAB: DATABASE
+════════════════════════════════ -->
+<div class="page" id="tab-db">
+  <div class="g5" style="margin-bottom:2px;">
+    <div class="kpi" style="--kc:var(--cyan)"><div class="kl">Total</div><div class="kv">5,000</div><div class="ks">sản phẩm</div></div>
+    <div class="kpi" style="--kc:var(--green)"><div class="kl">Giá còn hạn</div><div class="kv">3,412</div><div class="ks">68%</div></div>
+    <div class="kpi" style="--kc:var(--yellow)"><div class="kl">Hết hạn</div><div class="kv">1,083</div><div class="ks">22%</div></div>
+    <div class="kpi" style="--kc:var(--red)"><div class="kl">Chưa có</div><div class="kv">505</div><div class="ks">10%</div></div>
+    <div class="kpi" style="--kc:var(--violet)"><div class="kl">Query time</div><div class="kv" style="font-size:18px;padding-top:4px;">&lt;8ms</div><div class="ks">FTS5</div></div>
+  </div>
+
+  <div class="srch-box">
+    <span style="color:var(--t3);font-size:13px;">⌕</span>
+    <input class="srch-in" id="srch-in" placeholder="Nhập mã code, tên SP, spec… (fuzzy · Enter để tìm)" oninput="doSearch(this.value)" autocomplete="off">
+    <div class="srch-meta" id="srch-meta">5,000 rows</div>
+  </div>
+
+  <div style="display:flex;gap:5px;flex-wrap:wrap;">
+    <button class="pill on" onclick="setPill(this,'all')">Tất cả</button>
+    <button class="pill" onclick="setPill(this,'gc')">Gia công</button>
+    <button class="pill or" onclick="setPill(this,'tm')">Thương mại</button>
+    <button class="pill yw" onclick="setPill(this,'exp')">⚠ Hết hạn</button>
+    <button class="pill rd" onclick="setPill(this,'none')">✕ Chưa có giá</button>
+    <button class="pill" onclick="setPill(this,'ok')">✓ Còn hạn</button>
+  </div>
+
+  <div style="font-size:8px;color:var(--t3);" id="rc">Nhập để tìm · Fuzzy match · Max 50 kết quả</div>
+
+  <div class="tbl-wrap" style="max-height:calc(100vh - 320px);">
+    <table>
+      <thead><tr>
+        <th>MÃ CODE</th><th>TÊN SẢN PHẨM</th><th>SPEC</th>
+        <th>LOẠI</th><th>GIÁ</th><th>CONF.</th><th>TRẠNG THÁI</th><th>CẬP NHẬT</th><th>ACTIONS</th>
+      </tr></thead>
+      <tbody id="db-tbody">
+        <tr><td colspan="9" style="text-align:center;color:var(--t3);padding:24px;">↑ Nhập mã hàng để bắt đầu tìm kiếm</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ANALYTICS placeholder -->
+<div class="page" id="tab-analytics">
+  <div style="text-align:center;color:var(--t3);padding:60px 0;">
+    <div style="font-size:32px;margin-bottom:12px;">📈</div>
+    <div style="font-size:11px;margin-bottom:4px;">Analytics · sẵn sàng sau khi ETL chạy xong</div>
+    <div style="font-size:9px;">Win rate · Seasonal · Price benchmark · AI Rules · Maker performance</div>
+  </div>
+</div>
+
+<!-- SYSTEM -->
+<div class="page" id="tab-system">
+  <div class="g2">
+    <div class="card" style="--ca:var(--green)">
+      <div class="card-top"></div>
+      <div class="clabel">🔒 Security + Backup</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">OneDrive Guard</span><span class="tag tg-ok">READ-ONLY</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Credentials</span><span class="tag tg-ok">.env SECURE</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Daily Backup</span><span class="tag tg-ok">✓ 18:00</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;padding:3px 0;"><span style="color:var(--t2)">GDrive Sync</span><span class="tag tg-ok">AUTO</span></div>
+      </div>
+    </div>
+    <div class="card" style="--ca:var(--cyan)">
+      <div class="card-top"></div>
+      <div class="clabel">🗄 Sheets Status</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">PO_Cache</span><span style="color:var(--t3);font-size:7px;">23r</span><span class="tag tg-ok">SYNCED</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Price_DB</span><span style="color:var(--t3);font-size:7px;">89r</span><span class="tag tg-ok">SYNCED</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Job_Status</span><span style="color:var(--t3);font-size:7px;">live</span><span class="tag" style="background:var(--ca);color:var(--cyan)">LIVE</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">PO_History</span><span style="color:var(--t3);font-size:7px;">124r</span><span class="tag tg-ok">SYNCED</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Error_Log</span><span style="color:var(--t3);font-size:7px;">0r</span><span class="tag tg-ok">CLEAN</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;border-bottom:1px solid var(--b1);"><span style="color:var(--t2)">Filter_Rules</span><span style="color:var(--t3);font-size:7px;">18r</span><span class="tag tg-ok">SYNCED</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:8px;padding:3px 0;"><span style="color:var(--t2)">Audit_Log</span><span style="color:var(--t3);font-size:7px;">∞</span><span class="tag" style="background:var(--ca);color:var(--cyan)">LIVE</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="--ca:var(--green)">
+    <div class="card-top"></div>
+    <div class="clabel">▸ Full Log</div>
+    <div class="log-wrap" id="log-sys" style="max-height:400px;"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /body -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="fi"><span style="color:var(--green)">●</span>OneDrive READ-ONLY</div>
+  <div class="fi"><span style="color:var(--blue)">●</span>Sheets OK</div>
+  <div class="fi"><span style="color:var(--cyan)">●</span>SQLite 5k</div>
+  <div class="fi"><span style="color:var(--violet)">●</span>Gemini Key#1</div>
+  <div class="fi"><span style="color:var(--yellow)">●</span>Jobs: 2</div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <span style="color:var(--t3)">v5.0</span>
+    <span class="blink" style="color:var(--green)">■</span>
+  </div>
+</footer>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+</div><!-- /root -->
+
+<script>
+// Clock + date
+setInterval(()=>{
+  const n = new Date();
+  document.getElementById('clk').textContent = n.toLocaleTimeString('vi-VN');
+  document.getElementById('date-lbl').textContent = n.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
+}, 1000);
+
+// Tab nav
+function goTab(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  if(btn) btn.classList.add('on');
+  document.querySelectorAll('.ri').forEach(r=>r.classList.remove('on'));
+}
+function goSide(name, el) {
+  goTab(name, null);
+  const map = {ops:0,bidding:1,db:2,analytics:3,system:4};
+  const btns = document.querySelectorAll('.nb');
+  if(map[name]!==undefined) btns[map[name]].classList.add('on');
+  el.classList.add('on');
+}
+
+// Toast
+function showToast(type, icon, title, msg) {
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  const cls = {tok:'tok',twarn:'twarn',terr:'terr',tai:'tai',info:'tok'}[type] || 'tok';
+  t.className = `toast ${cls}`;
+  t.innerHTML = `<div class="toast-ic">${icon}</div><div class="toast-body"><div class="toast-t">${title}</div><div class="toast-m">${msg}</div></div>`;
+  wrap.appendChild(t);
+  setTimeout(()=>{
+    t.style.cssText += 'opacity:0;transform:translateX(12px);transition:all .25s;';
+    setTimeout(()=>t.remove(), 250);
+  }, 3500);
+}
+
+// Checklist
+const ciStates = ['','run','done','err'];
+const ciIcons  = {'':'','run':'→','done':'✓','err':'✕'};
+function toggleCI(el) {
+  const cur = ciStates.find(s=>s&&el.classList.contains(s)) || '';
+  const nxt = ciStates[(ciStates.indexOf(cur)+1) % ciStates.length];
+  ciStates.filter(Boolean).forEach(s=>el.classList.remove(s));
+  if(nxt) el.classList.add(nxt);
+  el.querySelector('.cib').textContent = ciIcons[nxt];
+  if(nxt==='done') {
+    const n = new Date();
+    el.querySelector('.ci-t').textContent = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+    addLog('ok','TASK', el.querySelector('.ci-n').textContent + ' — ✓ done');
+    showToast('tok','✅','Task Done', el.querySelector('.ci-n').textContent);
+    document.getElementById('s-done').textContent = parseInt(document.getElementById('s-done').textContent)+1;
+  }
+  updateCL();
+}
+function updateCL() {
+  const done = document.querySelectorAll('.ci.done').length;
+  const total = document.querySelectorAll('.ci').length;
+  document.getElementById('cl-fill').style.width = Math.round(done/total*100)+'%';
+  document.getElementById('cl-lbl').textContent = `${done}/${total}`;
+}
+updateCL();
+
+// Job controls
+function pauseJob(id) {
+  const j = document.getElementById(id);
+  if(!j.classList.contains('running')) return;
+  j.classList.remove('running'); j.classList.add('jidle');
+  j.querySelector('.st').className = 'st';
+  j.querySelector('.st').textContent = 'PAUSED';
+  j.querySelector('.st').style.cssText = 'background:var(--oa);color:var(--orange);';
+  showToast('twarn','⏸','Paused', j.querySelector('.jc-nm').textContent+' đã tạm dừng');
+}
+function cancelJob(id, name) {
+  const j = document.getElementById(id);
+  j.className = 'jcard jidle';
+  j.querySelector('.st').className = 'st st-idle';
+  j.querySelector('.st').textContent = 'CANCELLED';
+  showToast('terr','🛑','Cancelled', name+' đã bị huỷ');
+}
+
+// Log
+function addLog(type, tag, msg) {
+  ['log-main','log-sys'].forEach(id=>{
+    const el = document.getElementById(id); if(!el) return;
+    const tagCls = {ok:'t-ok',warn:'t-w',err:'t-e',info:'t-i',ai:'t-a',db:'t-d'}[type]||'t-i';
+    const now = new Date().toLocaleTimeString('vi-VN');
+    el.insertAdjacentHTML('afterbegin',
+      `<div class="le ${type}"><span class="le-t">${now}</span><span class="le-tag ${tagCls}">${tag}</span><span class="le-msg">${msg}</span></div>`);
+    if(el.children.length > 100) el.removeChild(el.lastChild);
+  });
+}
+
+// Filter pills
+let activePill = 'all', srchTerm = '';
+function setPill(btn, val) {
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on'); activePill = val; doSearch(srchTerm);
+}
+
+// Mock DB
+const DB = [
+  {code:'QT26015802-MK',name:'Test JIG M4×7',spec:'SS304·Torx·Gr8.8',type:'tm',maker:'SAMSUNG',price:125,conf:5,st:'ok',upd:'15/01'},
+  {code:'VB-3301-AL',name:'Nhôm thanh 20×20',spec:'6061-T6·2mm',type:'tm',maker:'--',price:null,conf:0,st:'none',upd:'--'},
+  {code:'SC-0089-CU',name:'Đồng lá cuộn T0.3',spec:'Cu-ETP·W150',type:'tm',maker:'--',price:890,conf:3,st:'exp',upd:'10/10'},
+  {code:'DW-1102-PE',name:'Dây điện AWG22',spec:'PVC·300V',type:'gc',maker:'--',price:45,conf:4,st:'ok',upd:'15/01'},
+  {code:'CN-4401-PL',name:'Connector JST 4p',spec:'2.54mm·Male',type:'tm',maker:'JST',price:12,conf:3,st:'ok',upd:'20/01'},
+  {code:'LB-0033-FE',name:'Lá thép SPCC T0.5',spec:'1220W·cán nguội',type:'gc',maker:'--',price:1200,conf:5,st:'ok',upd:'18/01'},
+  {code:'MK-2049-TI',name:'Ốc titanium M3×6',spec:'Grade5·Torx',type:'gc',maker:'--',price:null,conf:0,st:'none',upd:'--'},
+  {code:'HS-0044-PE',name:'Ống co nhiệt Ø6',spec:'2:1·Đen·PE',type:'tm',maker:'--',price:15,conf:2,st:'exp',upd:'01/11'},
+  {code:'GS-6601-SI',name:'Ron O-ring Ø10×2',spec:'VMQ70',type:'tm',maker:'--',price:5,conf:4,st:'ok',upd:'17/01'},
+  {code:'WR-8801-CU',name:'Dây cáp đồng 16mm²',spec:'450/750V·PVC',type:'gc',maker:'--',price:320,conf:5,st:'ok',upd:'22/01'},
+];
+
+function doSearch(val) {
+  srchTerm = val.toLowerCase().trim();
+  let res = DB;
+  if(activePill==='gc')   res = res.filter(r=>r.type==='gc');
+  else if(activePill==='tm')   res = res.filter(r=>r.type==='tm');
+  else if(activePill==='exp')  res = res.filter(r=>r.st==='exp');
+  else if(activePill==='none') res = res.filter(r=>r.st==='none');
+  else if(activePill==='ok')   res = res.filter(r=>r.st==='ok');
+  if(srchTerm) res = res.filter(r=>fz(r.code.toLowerCase(),srchTerm)||fz(r.name.toLowerCase(),srchTerm)||fz(r.spec.toLowerCase(),srchTerm));
+  const total = res.length; res = res.slice(0,50);
+  document.getElementById('srch-meta').textContent = srchTerm ? `${total} kết quả` : '5,000 rows';
+  document.getElementById('rc').textContent = srchTerm ? `Tìm thấy ${total} kết quả cho "${val}"` : 'Nhập để tìm · Fuzzy · Max 50';
+  renderTbl(res, srchTerm);
+}
+function fz(s,t) {
+  if(s.includes(t)) return true;
+  let j=0; for(let i=0;i<s.length&&j<t.length;i++){if(s[i]===t[j])j++;}
+  return j===t.length && t.length>=2;
+}
+function hl(text, term) {
+  if(!term||term.length<2) return text;
+  const idx = text.toLowerCase().indexOf(term);
+  if(idx<0) return text;
+  return text.slice(0,idx)+'<span class="hl">'+text.slice(idx,idx+term.length)+'</span>'+text.slice(idx+term.length);
+}
+function renderTbl(rows, term) {
+  const tb = document.getElementById('db-tbody');
+  if(!rows.length) { tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:20px;">Không có kết quả</td></tr>'; return; }
+  tb.innerHTML = rows.map(r=>{
+    const tt = r.type==='gc'?'<span class="tag tg-gc">GC</span>':'<span class="tag tg-tm">TM</span>';
+    const pv = r.price ? `${r.price.toLocaleString()}đ` : '--';
+    const pc = r.st==='ok'?'color:var(--green)':r.st==='exp'?'color:var(--yellow)':'color:var(--red)';
+    const st = r.st==='ok'?'<span class="tag tg-ok">✓ OK</span>':r.st==='exp'?'<span class="tag tg-exp">⚠ EXP</span>':'<span class="tag tg-no">✕ --</span>';
+    const stars = '★'.repeat(r.conf)+'☆'.repeat(5-r.conf);
+    return `<tr>
+      <td class="cod">${hl(r.code,term)}</td>
+      <td>${hl(r.name,term)}</td>
+      <td style="font-size:8px;color:var(--t3)">${hl(r.spec,term)}</td>
+      <td>${tt}</td>
+      <td style="${pc}">${pv}</td>
+      <td style="color:var(--yellow);font-size:9px;">${stars}</td>
+      <td>${st}</td>
+      <td style="font-size:8px;color:var(--t3)">${r.upd}</td>
+      <td><div class="row-acts">
+        <div class="ra" onclick="showToast('tok','⚙️','Fill','Tạo hồ sơ: ${r.code}…')">Hồ sơ</div>
+        <div class="ra ra-y" onclick="showToast('tai','🕷','Crawl','Crawl giá: ${r.code}…')">Giá</div>
+        <div class="ra ra-r" onclick="showToast('info','📁','Folder','outputs/${r.code}/')">Folder</div>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Job simulation
+let fp=50, ap=67;
+const sim = setInterval(()=>{
+  if(fp<100) {
+    fp = Math.min(100, fp+Math.random()*3.5);
+    document.getElementById('fill-pf').style.width = fp+'%';
+    document.getElementById('fill-pp').textContent = Math.round(fp)+'%';
+    const steps = ['Đọc BC BQMS (1/4)','Điền cam kết (2/4)','Điền quotation (3/4)','Xuất PDF (4/4)'];
+    document.getElementById('fill-step').textContent = steps[Math.min(Math.floor(fp/25),3)];
+    if(fp>=100) {
+      document.getElementById('j-fill').className = 'jcard jdone';
+      document.getElementById('j-fill').querySelector('.st').className='st st-done';
+      document.getElementById('j-fill').querySelector('.st').textContent='DONE';
+      document.getElementById('fill-step').textContent = '✓ 2 Excel + 2 PDF · outputs/QT26015802/';
+      addLog('ok','FILL','Auto Fill ✓ QT26015802 · saved to outputs/');
+      showToast('tok','⚙️','Auto Fill Done','QT26015802 · 2 Excel + 2 PDF tạo xong');
+      setTimeout(startCrawler, 800);
+    }
+  }
+  if(ap<100) {
+    ap = Math.min(100, ap+Math.random()*2);
+    document.getElementById('ai-pf').style.width = ap+'%';
+    document.getElementById('ai-pp').textContent = Math.round(ap)+'%';
+    const codes = ['QT26015808','QT26015809','QT26015810','QT26015811'];
+    document.getElementById('ai-cur').textContent = codes[Math.floor(Math.random()*codes.length)];
+    if(ap>=100) {
+      document.getElementById('j-ai').className = 'jcard jdone';
+      document.getElementById('j-ai').querySelector('.st').className='st st-done';
+      document.getElementById('j-ai').querySelector('.st').textContent='DONE';
+      document.getElementById('ai-res').textContent = '✅12 · ❌7 · ❓4';
+      document.getElementById('k-ai').textContent = '23';
+      addLog('ai','AI','Classifier ✓ 23 đơn: 12✅ 7❌ 4❓');
+      showToast('tai','🤖','AI Done','23 đơn phân loại xong: 12✅ 7❌ 4❓ cần xem lại');
+    }
+  }
+}, 700);
+
+function startCrawler() {
+  const j = document.getElementById('j-crawl');
+  j.className = 'jcard running';
+  j.querySelector('.st').className = 'st st-run';
+  j.querySelector('.st').textContent = 'RUNNING';
+  j.querySelector('.jc-nm').style.color = 'var(--yellow)';
+  document.getElementById('crawl-q').textContent = 'Đang crawl QT26015810…';
+  document.getElementById('crawl-eta').textContent = '~5 phút';
+  addLog('info','CRAWL','Alibaba crawler started · 8 mã');
+  let cp=0;
+  const cs = setInterval(()=>{
+    cp = Math.min(100, cp+Math.random()*5);
+    document.getElementById('crawl-pf').style.width = cp+'%';
+    document.getElementById('crawl-pp').textContent = Math.round(cp)+'%';
+    if(cp>=100) {
+      clearInterval(cs);
+      j.className = 'jcard jdone';
+      j.querySelector('.st').className='st st-done';
+      j.querySelector('.st').textContent='DONE';
+      document.getElementById('crawl-q').textContent = '8/8 done · top-5 prices each';
+      addLog('ok','CRAWL','Alibaba ✓ 8 mã · chờ confirm giá');
+      showToast('tok','🕷','Crawler Done','8 mã hàng đã có giá · vào Database để confirm');
+    }
+  }, 500);
+}
+
+// Sync time event
+setTimeout(()=>{
+  addLog('ok','SYNC','OneDrive sync complete · 23 rows');
+  showToast('info','📡','Watchdog','BC BQMS mới: 4 đơn thay đổi');
+}, 8000);
+
+// Deadline alert
+setTimeout(()=>{
+  showToast('terr','🚨','DEADLINE ALERT','QT26015789 Vòng 3 — còn 2 tiếng! Vào tab Đấu Thầu ngay');
+}, 12000);
+</script>
+</body>
+</html>

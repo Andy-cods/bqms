@@ -1,0 +1,6 @@
+# BSMQ Tool — Optional Heavy Packages
+# Chỉ cần cài nếu dùng Tool 2 (Price Tracker / Web Crawler)
+# Install: python -m pip install -r requirements_optional.txt
+
+crawl4ai>=0.4.0
+playwright>=1.40.0
