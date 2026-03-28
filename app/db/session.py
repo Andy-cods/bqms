@@ -30,3 +30,10 @@ async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
         await create_pool()
     async with pool.acquire() as conn:  # type: ignore[union-attr]
         yield conn
+
+
+async def get_pool() -> asyncpg.Pool:
+    global pool
+    if pool is None:
+        await create_pool()
+    return pool  # type: ignore[return-value]
