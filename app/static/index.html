@@ -4,429 +4,256 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Song Chau ERP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg0: #f0f4fa; --bg1: #e8eef8; --bg2: #ffffff; --bg3: #f4f7fd;
-  --border: rgba(60,100,200,0.12); --border-bright: rgba(60,100,200,0.28);
-  --text: #0f1c3a; --text-2: #3a5080; --text-3: #7a92bb;
-  --blue: #2563eb; --cyan: #0891b2; --green: #059669;
-  --purple: #7c3aed; --amber: #d97706; --red: #dc2626;
-  --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Inter',system-ui,sans-serif; background:var(--bg0); color:var(--text); min-height:100vh; }
-
-/* Layout */
-.app { display:flex; min-height:100vh; }
-.sidebar { width:220px; background:var(--bg2); border-right:1px solid var(--border); padding:16px 0; position:fixed; top:0; bottom:0; overflow-y:auto; z-index:50; }
-.sidebar .logo { padding:12px 20px 24px; font-size:18px; font-weight:700; color:var(--blue); }
-.sidebar .logo span { color:var(--text); }
-.nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:13px; color:var(--text-2); cursor:pointer; border-left:3px solid transparent; transition:all .15s; text-decoration:none; }
-.nav-item:hover { background:var(--bg3); color:var(--blue); }
-.nav-item.active { background:rgba(37,99,235,0.06); color:var(--blue); border-left-color:var(--blue); font-weight:600; }
-.nav-section { font-size:10px; color:var(--text-3); padding:16px 20px 6px; letter-spacing:.08em; text-transform:uppercase; }
-.main { margin-left:220px; flex:1; }
-.topbar { height:56px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; position:sticky; top:0; z-index:40; }
-.topbar .title { font-size:15px; font-weight:600; }
-.topbar .user-info { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-2); }
-.topbar .role-badge { padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; background:rgba(37,99,235,0.08); color:var(--blue); }
-.content { padding:24px; }
-
-/* Cards */
-.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
-.kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
-.kpi-card .value { font-size:28px; font-weight:700; color:var(--blue); }
-.kpi-card .label { font-size:11px; color:var(--text-3); margin-top:4px; text-transform:uppercase; letter-spacing:.05em; }
-.kpi-card.green .value { color:var(--green); }
-.kpi-card.purple .value { color:var(--purple); }
-.kpi-card.amber .value { color:var(--amber); }
-.kpi-card.cyan .value { color:var(--cyan); }
-
-/* Table */
-.card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px; }
-.card-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-.card-header h3 { font-size:14px; font-weight:600; }
-table { width:100%; border-collapse:collapse; font-size:12px; }
-thead th { padding:10px 16px; text-align:left; background:var(--bg3); color:var(--text-2); font-weight:600; font-size:11px; letter-spacing:.03em; border-bottom:1px solid var(--border); position:sticky; top:56px; }
-tbody td { padding:10px 16px; border-bottom:1px solid rgba(60,100,200,0.06); }
-tbody tr:hover { background:rgba(37,99,235,0.02); }
-
-/* Buttons */
-.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; border:none; font-family:inherit; transition:all .15s; }
-.btn-primary { background:var(--blue); color:#fff; }
-.btn-primary:hover { background:#1d4ed8; }
-.btn-outline { background:transparent; color:var(--blue); border:1px solid rgba(37,99,235,0.3); }
-.btn-sm { padding:5px 10px; font-size:11px; }
-.btn-danger { background:rgba(220,38,38,0.08); color:var(--red); border:1px solid rgba(220,38,38,0.2); }
-
-/* Forms */
-.input { width:100%; padding:8px 12px; border:1px solid var(--border-bright); border-radius:6px; font-size:12px; font-family:inherit; outline:none; }
-.input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
-.search-bar { position:relative; }
-.search-bar .input { padding-left:32px; }
-
-/* Badge */
-.badge { display:inline-flex; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
-.badge-green { background:rgba(5,150,105,0.1); color:var(--green); }
-.badge-blue { background:rgba(37,99,235,0.08); color:var(--blue); }
-.badge-amber { background:rgba(217,119,6,0.08); color:var(--amber); }
-.badge-red { background:rgba(220,38,38,0.08); color:var(--red); }
-.badge-purple { background:rgba(124,58,237,0.08); color:var(--purple); }
-
-/* Login */
-.login-page { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg0); }
-.login-box { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:40px; width:380px; box-shadow:var(--shadow); }
-.login-box h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
-.login-box h1 span { color:var(--blue); }
-.login-box .sub { font-size:12px; color:var(--text-3); margin-bottom:24px; }
-.form-group { margin-bottom:16px; }
-.form-group label { display:block; font-size:11px; font-weight:500; color:var(--text-2); margin-bottom:4px; }
-.error-msg { color:var(--red); font-size:11px; margin-top:8px; display:none; }
-
-/* Toast */
-.toast { position:fixed; bottom:20px; right:20px; padding:12px 20px; border-radius:8px; font-size:12px; color:#fff; background:var(--green); z-index:1000; animation:slideUp .3s; }
-.toast.error { background:var(--red); }
-@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
-
-/* Pagination */
-.pagination { display:flex; align-items:center; gap:8px; padding:12px 16px; justify-content:flex-end; }
-.pagination button { padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:var(--bg2); font-size:11px; cursor:pointer; }
-.pagination button.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-.pagination .info { font-size:11px; color:var(--text-3); }
-
-/* Page visibility */
-.page { display:none; }
-.page.active { display:block; }
-
-/* Hide app when not logged in */
-.app.hidden { display:none; }
-.login-page.hidden { display:none; }
+:root{--bg0:#f0f4fa;--bg2:#fff;--bg3:#f4f7fd;--border:rgba(60,100,200,.12);--text:#0f1c3a;--text2:#3a5080;--text3:#7a92bb;--blue:#2563eb;--cyan:#0891b2;--green:#059669;--purple:#7c3aed;--amber:#d97706;--red:#dc2626;--radius:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg0);color:var(--text);min-height:100vh}
+.app{display:flex;min-height:100vh}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);padding:12px 0;position:fixed;top:0;bottom:0;overflow-y:auto;z-index:50}
+.sidebar .logo{padding:12px 16px 20px;font-size:16px;font-weight:700;color:var(--blue)}.sidebar .logo span{color:var(--text)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;font-size:12px;color:var(--text2);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none}
+.nav-item:hover{background:var(--bg3);color:var(--blue)}.nav-item.active{background:rgba(37,99,235,.06);color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.nav-section{font-size:9px;color:var(--text3);padding:14px 16px 4px;letter-spacing:.1em;text-transform:uppercase}
+.main{margin-left:210px;flex:1}
+.topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:40}
+.topbar .title{font-size:14px;font-weight:600}.topbar .user-info{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)}
+.role-badge{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;background:rgba(37,99,235,.08);color:var(--blue)}
+.content{padding:20px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.kpi-card .value{font-size:24px;font-weight:700;color:var(--blue)}.kpi-card .label{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+.kpi-card.green .value{color:var(--green)}.kpi-card.purple .value{color:var(--purple)}.kpi-card.amber .value{color:var(--amber)}.kpi-card.cyan .value{color:var(--cyan)}.kpi-card.red .value{color:var(--red)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{padding:8px 12px;text-align:left;background:var(--bg3);color:var(--text2);font-weight:600;font-size:10px;letter-spacing:.03em;border-bottom:1px solid var(--border);position:sticky;top:50px}
+tbody td{padding:7px 12px;border-bottom:1px solid rgba(60,100,200,.05)}
+tbody tr:hover{background:rgba(37,99,235,.02)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-outline{background:transparent;color:var(--blue);border:1px solid rgba(37,99,235,.3)}
+.btn-sm{padding:4px 10px;font-size:10px}
+.input{width:100%;padding:7px 10px;border:1px solid rgba(60,100,200,.25);border-radius:6px;font-size:11px;font-family:inherit;outline:none}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.badge{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
+.badge-green{background:rgba(5,150,105,.1);color:var(--green)}.badge-blue{background:rgba(37,99,235,.08);color:var(--blue)}
+.badge-amber{background:rgba(217,119,6,.08);color:var(--amber)}.badge-red{background:rgba(220,38,38,.08);color:var(--red)}
+.badge-purple{background:rgba(124,58,237,.08);color:var(--purple)}.badge-cyan{background:rgba(8,145,178,.08);color:var(--cyan)}
+.pagination{display:flex;align-items:center;gap:6px;padding:10px 12px;justify-content:flex-end}
+.pagination button{padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg2);font-size:10px;cursor:pointer}
+.pagination button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pagination .info{font-size:10px;color:var(--text3)}
+.page{display:none}.page.active{display:block}
+.app.hidden{display:none}.login-page.hidden{display:none}
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg0)}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px;width:360px}
+.login-box h1{font-size:22px;font-weight:700;margin-bottom:4px}.login-box h1 span{color:var(--blue)}
+.login-box .sub{font-size:11px;color:var(--text3);margin-bottom:20px}
+.form-group{margin-bottom:14px}.form-group label{display:block;font-size:10px;font-weight:500;color:var(--text2);margin-bottom:3px}
+.error-msg{color:var(--red);font-size:10px;margin-top:6px;display:none}
+.makers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.maker-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.maker-card .name{font-size:11px;font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.maker-card .count{font-size:13px;font-weight:700;color:var(--blue)}
 </style>
 </head>
 <body>
-
-<!-- LOGIN PAGE -->
 <div id="loginPage" class="login-page">
   <div class="login-box">
     <h1><span>Song Chau</span> ERP</h1>
     <p class="sub">Internal Procurement Automation System</p>
-    <div class="form-group">
-      <label>Email</label>
-      <input id="loginEmail" class="input" type="email" placeholder="admin@songchau.vn" value="admin@songchau.vn">
-    </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input id="loginPass" class="input" type="password" placeholder="********" value="admin123">
-    </div>
+    <div class="form-group"><label>Email</label><input id="loginEmail" class="input" type="email" value="admin@songchau.vn"></div>
+    <div class="form-group"><label>Password</label><input id="loginPass" class="input" type="password" value="admin123"></div>
     <div id="loginError" class="error-msg"></div>
-    <button id="loginBtn" class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center" onclick="doLogin()">Login</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px;justify-content:center" onclick="doLogin()">Login</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
 <div id="appShell" class="app hidden">
   <aside class="sidebar">
     <div class="logo"><span>Song Chau</span> ERP</div>
-    <div class="nav-section">Main</div>
+    <div class="nav-section">Overview</div>
     <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</a>
+    <div class="nav-section">Data</div>
     <a class="nav-item" data-page="products" onclick="navigate('products')">Products</a>
-    <a class="nav-item" data-page="po" onclick="navigate('po')">Purchase Orders</a>
     <a class="nav-item" data-page="transactions" onclick="navigate('transactions')">Transactions</a>
+    <a class="nav-item" data-page="quotations" onclick="navigate('quotations')">Quotations</a>
+    <a class="nav-item" data-page="deliveries" onclick="navigate('deliveries')">Deliveries</a>
+    <a class="nav-item" data-page="orders" onclick="navigate('orders')">Orders</a>
+    <div class="nav-section">Tools</div>
+    <a class="nav-item" data-page="autofill" onclick="navigate('autofill')">Auto-fill</a>
+    <a class="nav-item" data-page="classify" onclick="navigate('classify')">AI Classify</a>
     <div class="nav-section">Admin</div>
     <a class="nav-item" data-page="users" onclick="navigate('users')">Users</a>
     <a class="nav-item" data-page="audit" onclick="navigate('audit')">Audit Log</a>
-    <div style="position:absolute;bottom:16px;left:0;right:0;padding:0 20px">
+    <div style="position:absolute;bottom:12px;left:0;right:0;padding:0 16px">
       <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center" onclick="doLogout()">Logout</button>
     </div>
   </aside>
   <div class="main">
     <div class="topbar">
       <div class="title" id="pageTitle">Dashboard</div>
-      <div class="user-info">
-        <span id="userName"></span>
-        <span id="userRole" class="role-badge"></span>
-      </div>
+      <div class="user-info"><span id="userName"></span><span id="userRole" class="role-badge"></span></div>
     </div>
     <div class="content">
-
-      <!-- DASHBOARD -->
-      <div id="page-dashboard" class="page active">
-        <div class="kpi-row">
-          <div class="kpi-card"><div class="value" id="kProducts">-</div><div class="label">Products</div></div>
-          <div class="kpi-card green"><div class="value" id="kTransactions">-</div><div class="label">Transactions</div></div>
-          <div class="kpi-card purple"><div class="value" id="kPO">-</div><div class="label">Purchase Orders</div></div>
-          <div class="kpi-card amber"><div class="value" id="kRFQ">-</div><div class="label">RFQ</div></div>
-          <div class="kpi-card cyan"><div class="value" id="kUsers">-</div><div class="label">Users</div></div>
-        </div>
-        <div class="card"><div class="card-header"><h3>System Status</h3></div>
-          <div style="padding:20px" id="healthInfo">Loading...</div>
-        </div>
-      </div>
-
-      <!-- PRODUCTS -->
-      <div id="page-products" class="page">
-        <div class="card">
-          <div class="card-header">
-            <h3>Products Database</h3>
-            <div style="display:flex;gap:8px">
-              <input id="prodSearch" class="input" style="width:240px" placeholder="Search products..." onkeyup="if(event.key==='Enter')loadProducts()">
-              <button class="btn btn-primary btn-sm" onclick="loadProducts()">Search</button>
-            </div>
-          </div>
-          <table><thead><tr>
-            <th>BQMS Code</th><th>Product Name</th><th>Maker</th><th>Type</th><th>Unit</th><th>Stock</th>
-          </tr></thead><tbody id="prodBody"></tbody></table>
-          <div class="pagination" id="prodPagination"></div>
-        </div>
-      </div>
-
-      <!-- PURCHASE ORDERS -->
-      <div id="page-po" class="page">
-        <div class="card">
-          <div class="card-header"><h3>Purchase Orders</h3></div>
-          <table><thead><tr>
-            <th>PO Number</th><th>Status</th><th>Amount</th><th>Currency</th><th>ETA</th><th>Created</th>
-          </tr></thead><tbody id="poBody"></tbody></table>
-          <div class="pagination" id="poPagination"></div>
-        </div>
-      </div>
-
-      <!-- TRANSACTIONS -->
-      <div id="page-transactions" class="page">
-        <div class="card">
-          <div class="card-header">
-            <h3>Transactions</h3>
-            <div style="display:flex;gap:8px">
-              <input id="txSearch" class="input" style="width:200px" placeholder="Search..." onkeyup="if(event.key==='Enter')loadTransactions()">
-              <button class="btn btn-primary btn-sm" onclick="loadTransactions()">Search</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto"><table><thead><tr>
-            <th>Date</th><th>RFQ No</th><th>BQMS Code</th><th>Spec</th><th>Type</th><th>Maker</th><th>Qty</th><th>Unit</th><th>Deadline</th><th>Price USD</th><th>Price VND</th><th>Buyer</th><th>Seller</th>
-          </tr></thead><tbody id="txBody"></tbody></table></div>
-          <div class="pagination" id="txPagination"></div>
-        </div>
-      </div>
-
-      <!-- USERS -->
-      <div id="page-users" class="page">
-        <div class="card">
-          <div class="card-header"><h3>User Management</h3>
-            <button class="btn btn-primary btn-sm" onclick="showCreateUser()">+ Add User</button>
-          </div>
-          <table><thead><tr>
-            <th>Email</th><th>Name</th><th>Role</th><th>Department</th><th>Active</th><th>Last Login</th>
-          </tr></thead><tbody id="usersBody"></tbody></table>
-        </div>
-      </div>
-
-      <!-- AUDIT LOG -->
-      <div id="page-audit" class="page">
-        <div class="card">
-          <div class="card-header"><h3>Audit Log</h3></div>
-          <table><thead><tr>
-            <th>Time</th><th>User</th><th>Action</th><th>Table</th><th>Record</th>
-          </tr></thead><tbody id="auditBody"></tbody></table>
-          <div class="pagination" id="auditPagination"></div>
-        </div>
-      </div>
-
+      <div id="page-dashboard" class="page active"></div>
+      <div id="page-products" class="page"></div>
+      <div id="page-transactions" class="page"></div>
+      <div id="page-quotations" class="page"></div>
+      <div id="page-deliveries" class="page"></div>
+      <div id="page-orders" class="page"></div>
+      <div id="page-autofill" class="page"></div>
+      <div id="page-classify" class="page"></div>
+      <div id="page-users" class="page"></div>
+      <div id="page-audit" class="page"></div>
     </div>
   </div>
 </div>
 
 <script>
-const API = '/api/v1';
-let TOKEN = sessionStorage.getItem('token') || '';
-let USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const API='/api/v1';let TOKEN=sessionStorage.getItem('token')||'',USER=JSON.parse(sessionStorage.getItem('user')||'null');
+async function api(p,o={}){const h={'Content-Type':'application/json'};if(TOKEN)h['Authorization']='Bearer '+TOKEN;try{const r=await fetch(API+p,{...o,headers:h});if(r.status===401){doLogout();return null}return await r.json()}catch{return null}}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function fmt(n){return n!=null?Number(n).toLocaleString('vi-VN'):'-'}
+function fmtD(d){return d?new Date(d).toLocaleDateString('vi-VN'):'-'}
+function fmtM(n){return n!=null?(n>=1e6?fmt(Math.round(n/1e6))+'M':fmt(Math.round(n))):'-'}
+function typeBdg(t){return t?`<span class="badge badge-${t==='gc'?'green':'blue'}">${esc(t)}</span>`:'-'}
+function truncate(s,n=60){s=s||'';return s.length>n?s.slice(0,n)+'...':s}
 
-// ── API Client ─────────────────────────────────────
-async function api(path, opts = {}) {
-  const headers = {'Content-Type':'application/json'};
-  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
-  try {
-    const r = await fetch(API + path, {...opts, headers});
-    if (r.status === 401) { doLogout(); return null; }
-    return await r.json();
-  } catch(e) { return null; }
-}
+// Auth
+async function doLogin(){
+  const fd=new URLSearchParams();fd.append('username',document.getElementById('loginEmail').value);fd.append('password',document.getElementById('loginPass').value);
+  try{const r=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:fd});const d=await r.json();
+    if(d.access_token){TOKEN=d.access_token;USER=d.user;sessionStorage.setItem('token',TOKEN);sessionStorage.setItem('user',JSON.stringify(USER));showApp()}
+    else{const el=document.getElementById('loginError');el.textContent=d.error||d.detail||'Login failed';el.style.display='block'}
+  }catch{document.getElementById('loginError').textContent='Connection error';document.getElementById('loginError').style.display='block'}}
+function doLogout(){TOKEN='';USER=null;sessionStorage.clear();document.getElementById('appShell').classList.add('hidden');document.getElementById('loginPage').classList.remove('hidden')}
+function showApp(){document.getElementById('loginPage').classList.add('hidden');document.getElementById('appShell').classList.remove('hidden');
+  document.getElementById('userName').textContent=USER?.name||'';document.getElementById('userRole').textContent=USER?.role||'';
+  document.querySelectorAll('[data-page="users"],[data-page="audit"]').forEach(el=>{el.style.display=USER?.role==='admin'?'':'none'});loadDashboard()}
 
-function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
-function fmt(n) { return n != null ? Number(n).toLocaleString('vi-VN') : '-'; }
-function fmtDate(d) { return d ? new Date(d).toLocaleDateString('vi-VN') : '-'; }
+// Navigation
+function navigate(p){document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.querySelector(`[data-page="${p}"]`);if(nav)nav.classList.add('active');
+  const t={dashboard:'Dashboard',products:'Products',transactions:'Transactions',quotations:'Quotations',deliveries:'Deliveries',orders:'Orders',autofill:'Auto-fill Tool',classify:'AI Classify',users:'Users',audit:'Audit Log'};
+  document.getElementById('pageTitle').textContent=t[p]||p;
+  ({dashboard:loadDashboard,products:loadProducts,transactions:loadTransactions,quotations:loadQuotations,deliveries:loadDeliveries,orders:loadOrders,users:loadUsers,audit:loadAudit})[p]?.()}
 
-// ── Auth ───────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value;
-  const pass = document.getElementById('loginPass').value;
-  const formData = new URLSearchParams();
-  formData.append('username', email);
-  formData.append('password', pass);
-  try {
-    const r = await fetch(API + '/auth/login', {
-      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData
-    });
-    const data = await r.json();
-    if (data.access_token) {
-      TOKEN = data.access_token;
-      USER = data.user;
-      sessionStorage.setItem('token', TOKEN);
-      sessionStorage.setItem('user', JSON.stringify(USER));
-      showApp();
-    } else {
-      const el = document.getElementById('loginError');
-      el.textContent = data.error || data.detail || 'Login failed';
-      el.style.display = 'block';
-    }
-  } catch(e) {
-    document.getElementById('loginError').textContent = 'Connection error';
-    document.getElementById('loginError').style.display = 'block';
-  }
-}
+// Dashboard
+async function loadDashboard(){
+  const[kpi,stats]=await Promise.all([api('/tools/dashboard'),api('/stats')]);
+  if(!kpi||!stats)return;
+  const tx=kpi.transactions||{},qt=kpi.quotations||{},dv=kpi.deliveries||{};
+  document.getElementById('page-dashboard').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="value">${fmt(stats.products)}</div><div class="label">Products</div></div>
+      <div class="kpi-card green"><div class="value">${fmt(stats.transactions)}</div><div class="label">Transactions</div></div>
+      <div class="kpi-card purple"><div class="value">${fmt(tx.unique_rfq)}</div><div class="label">Unique RFQs</div></div>
+      <div class="kpi-card amber"><div class="value">${fmt(qt.total)}</div><div class="label">Quotations</div></div>
+      <div class="kpi-card cyan"><div class="value">${qt.win_rate||0}%</div><div class="label">Win Rate</div></div>
+      <div class="kpi-card"><div class="value">${fmt(dv.total)}</div><div class="label">Deliveries</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card"><div class="card-header"><h3>Transaction Breakdown</h3></div>
+        <div style="padding:16px">
+          <div style="display:flex;gap:16px;margin-bottom:12px">
+            <div><span class="badge badge-green">GC</span> <b>${fmt(tx.gc_count)}</b></div>
+            <div><span class="badge badge-blue">TM</span> <b>${fmt(tx.tm_count)}</b></div>
+            <div style="color:var(--text3)">Total USD: <b>$${fmtM(tx.total_usd)}</b></div>
+          </div>
+          <div><b>${fmt(qt.wins)}</b> wins / <b>${fmt(qt.losses)}</b> losses</div>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><h3>Top Makers</h3></div>
+        <div style="padding:12px" class="makers-grid">${(kpi.top_makers||[]).map(m=>
+          `<div class="maker-card"><div class="name" title="${esc(m.maker)}">${esc(m.maker)}</div><div class="count">${fmt(m.cnt)}</div></div>`
+        ).join('')}</div>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><h3>Recent Transactions</h3></div>
+      <table><thead><tr><th>Date</th><th>RFQ</th><th>Spec</th></tr></thead>
+      <tbody>${(kpi.recent||[]).map(r=>`<tr><td>${fmtD(r.date)}</td><td>${esc(r.ref)}</td><td>${esc(truncate(r.spec,80))}</td></tr>`).join('')}</tbody></table>
+    </div>`}
 
-function doLogout() {
-  TOKEN=''; USER=null;
-  sessionStorage.clear();
-  document.getElementById('appShell').classList.add('hidden');
-  document.getElementById('loginPage').classList.remove('hidden');
-}
+// Generic table page builder
+function buildTablePage(id,title,endpoint,columns,searchable=true){
+  let page=1;
+  const load=async(p)=>{
+    page=p||1;const q=searchable?document.getElementById(id+'Search')?.value||'':'';
+    const params=`?page=${page}&limit=50${q?'&q='+encodeURIComponent(q):''}`;
+    const data=await api(endpoint+params);if(!data)return;
+    const el=document.getElementById('page-'+id);
+    if(!el.querySelector('table')){
+      el.innerHTML=`<div class="card"><div class="card-header"><h3>${title}</h3>${searchable?`<div style="display:flex;gap:6px"><input id="${id}Search" class="input" style="width:200px" placeholder="Search..." onkeyup="if(event.key==='Enter')window['load_${id}'](1)"><button class="btn btn-primary btn-sm" onclick="window['load_${id}'](1)">Search</button></div>`:''}</div>
+        <div style="overflow-x:auto"><table><thead><tr>${columns.map(c=>`<th>${c.label}</th>`).join('')}</tr></thead><tbody id="${id}Body"></tbody></table></div>
+        <div class="pagination" id="${id}Pag"></div></div>`}
+    document.getElementById(id+'Body').innerHTML=data.data.map(r=>`<tr>${columns.map(c=>{
+      const v=r[c.key];
+      if(c.type==='date')return`<td>${fmtD(v)}</td>`;
+      if(c.type==='number')return`<td>${fmt(v)}</td>`;
+      if(c.type==='money')return`<td>${v!=null?fmt(Math.round(v)):'-'}</td>`;
+      if(c.type==='badge')return`<td>${typeBdg(v)}</td>`;
+      if(c.type==='trunc')return`<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v)}">${esc(truncate(v,50))}</td>`;
+      return`<td>${esc(v||'-')}</td>`}).join('')}</tr>`).join('')
+      ||`<tr><td colspan="${columns.length}" style="text-align:center;color:var(--text3);padding:30px">No data</td></tr>`;
+    renderPag(id+'Pag',data,load)};
+  window['load_'+id]=load;return load}
 
-function showApp() {
-  document.getElementById('loginPage').classList.add('hidden');
-  document.getElementById('appShell').classList.remove('hidden');
-  document.getElementById('userName').textContent = USER?.name || '';
-  document.getElementById('userRole').textContent = USER?.role || '';
-  // Hide admin nav for non-admins
-  document.querySelectorAll('[data-page="users"],[data-page="audit"]').forEach(el => {
-    el.style.display = USER?.role === 'admin' ? '' : 'none';
-  });
-  loadDashboard();
-}
+function renderPag(cid,data,fn){const el=document.getElementById(cid);if(!el||!data||data.pages<=1){if(el)el.innerHTML='';return}
+  let h=`<span class="info">${fmt(data.total)} rows</span>`;for(let i=1;i<=Math.min(data.pages,10);i++)h+=`<button class="${i===data.page?'active':''}" onclick="arguments[0].stopPropagation()">${i}</button>`;
+  el.innerHTML=h;el.querySelectorAll('button').forEach((b,i)=>b.onclick=()=>fn(i+1))}
 
-// ── Navigation ─────────────────────────────────────
-function navigate(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const el = document.getElementById('page-' + page);
-  if (el) el.classList.add('active');
-  const nav = document.querySelector(`[data-page="${page}"]`);
-  if (nav) nav.classList.add('active');
-  const titles = {dashboard:'Dashboard',products:'Products',po:'Purchase Orders',transactions:'Transactions',users:'Users',audit:'Audit Log'};
-  document.getElementById('pageTitle').textContent = titles[page] || page;
-  const loaders = {dashboard:loadDashboard,products:loadProducts,po:loadPOs,transactions:loadTransactions,users:loadUsers,audit:loadAudit};
-  if (loaders[page]) loaders[page]();
-}
+// Products
+const loadProducts=buildTablePage('products','Products','/products',[
+  {key:'bqms_code',label:'BQMS Code'},{key:'product_name',label:'Name',type:'trunc'},{key:'maker',label:'Maker'},
+  {key:'type',label:'Type',type:'badge'},{key:'unit',label:'Unit'},{key:'current_stock',label:'Stock',type:'number'}]);
 
-// ── Dashboard ──────────────────────────────────────
-async function loadDashboard() {
-  const [stats, health] = await Promise.all([api('/stats'), fetch('/api/health').then(r=>r.json()).catch(()=>null)]);
-  if (stats) {
-    document.getElementById('kProducts').textContent = fmt(stats.products);
-    document.getElementById('kTransactions').textContent = fmt(stats.transactions);
-    document.getElementById('kPO').textContent = fmt(stats.purchase_orders);
-    document.getElementById('kRFQ').textContent = fmt(stats.rfq_count);
-    document.getElementById('kUsers').textContent = fmt(stats.users);
-  }
-  if (health) {
-    document.getElementById('healthInfo').innerHTML =
-      `<span class="badge badge-green">Online</span> &nbsp; ${esc(health.postgres_version)} &nbsp; ${health.tables} tables`;
-  }
-}
+// Transactions
+const loadTransactions=buildTablePage('transactions','Transactions','/transactions',[
+  {key:'transaction_date',label:'Date',type:'date'},{key:'rfq_no',label:'RFQ'},{key:'bqms_code',label:'BQMS'},
+  {key:'spec',label:'Spec',type:'trunc'},{key:'type',label:'Type',type:'badge'},{key:'maker',label:'Maker'},
+  {key:'quantity',label:'Qty',type:'number'},{key:'unit',label:'Unit'},
+  {key:'unit_price_usd',label:'USD',type:'money'},{key:'unit_price_vnd',label:'VND',type:'money'},
+  {key:'buyer',label:'Buyer'},{key:'seller',label:'Seller',type:'trunc'}]);
 
-// ── Products ───────────────────────────────────────
-let prodPage = 1;
-async function loadProducts(page) {
-  prodPage = page || 1;
-  const q = document.getElementById('prodSearch')?.value || '';
-  const data = await api(`/products?q=${encodeURIComponent(q)}&page=${prodPage}&limit=50`);
-  if (!data) return;
-  document.getElementById('prodBody').innerHTML = data.data.map(p => `<tr>
-    <td style="font-size:10px">${esc(p.bqms_code)}</td>
-    <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.product_name)}">${esc(p.product_name)}</td>
-    <td>${esc(p.maker||'-')}</td>
-    <td><span class="badge badge-${p.type==='gc'?'green':'blue'}">${esc(p.type||'-')}</span></td>
-    <td>${esc(p.unit)}</td>
-    <td>${fmt(p.current_stock)}</td>
-  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:40px">No products yet.</td></tr>';
-  renderPagination('prodPagination', data, loadProducts);
-}
+// Quotations
+const loadQuotations=buildTablePage('quotations','Quotations','/quotations',[
+  {key:'date',label:'Date',type:'date'},{key:'rfq_no',label:'RFQ'},{key:'bqms_code',label:'BQMS'},
+  {key:'spec',label:'Spec',type:'trunc'},{key:'maker',label:'Maker'},{key:'quantity_forecast',label:'Qty',type:'number'},
+  {key:'price_bqms_v1',label:'V1',type:'money'},{key:'price_bqms_v2',label:'V2',type:'money'},
+  {key:'supplier',label:'Supplier',type:'trunc'},{key:'result',label:'Result'}]);
 
-// ── Purchase Orders ────────────────────────────────
-let poPage = 1;
-async function loadPOs(page) {
-  poPage = page || 1;
-  const data = await api(`/purchase-orders?page=${poPage}&limit=50`);
-  if (!data) return;
-  const statusColor = {draft:'purple',pending:'amber',approved:'green',cancelled:'red',closed:'blue'};
-  document.getElementById('poBody').innerHTML = data.data.map(p => `<tr>
-    <td>${esc(p.po_number)}</td>
-    <td><span class="badge badge-${statusColor[p.status]||'blue'}">${esc(p.status)}</span></td>
-    <td>${fmt(p.total_amount)}</td><td>${esc(p.currency)}</td><td>${fmtDate(p.eta_date)}</td><td>${fmtDate(p.created_at)}</td>
-  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:40px">No purchase orders yet.</td></tr>';
-  renderPagination('poPagination', data, loadPOs);
-}
+// Deliveries
+const loadDeliveries=buildTablePage('deliveries','PO Deliveries','/deliveries',[
+  {key:'po_date',label:'PO Date',type:'date'},{key:'po_number',label:'PO No'},{key:'rfq_no',label:'RFQ'},
+  {key:'bqms_code',label:'BQMS'},{key:'spec',label:'Spec',type:'trunc'},{key:'quantity',label:'Qty',type:'number'},
+  {key:'unit_price',label:'Price',type:'money'},{key:'buyer',label:'Buyer'},{key:'status',label:'Status'},
+  {key:'delivery_date',label:'Delivered',type:'date'}]);
 
-// ── Transactions ───────────────────────────────────
-let txPage = 1;
-async function loadTransactions(page) {
-  txPage = page || 1;
-  const q = document.getElementById('txSearch')?.value || '';
-  const data = await api(`/transactions?q=${encodeURIComponent(q)}&page=${txPage}&limit=50`);
-  if (!data) return;
-  const typeBadge = (t) => t ? `<span class="badge badge-${t==='gc'?'green':'blue'}">${esc(t)}</span>` : '-';
-  document.getElementById('txBody').innerHTML = data.data.map(t => `<tr>
-    <td>${fmtDate(t.transaction_date)}</td><td>${esc(t.rfq_no)}</td><td style="font-size:10px">${esc(t.bqms_code)}</td>
-    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.spec)}">${esc(t.spec)}</td>
-    <td>${typeBadge(t.type)}</td><td>${esc(t.maker)}</td><td>${fmt(t.quantity)}</td><td>${esc(t.unit||'-')}</td>
-    <td style="font-size:10px">${esc(t.deadline_text||'-')}</td>
-    <td>${t.unit_price_usd?fmt(t.unit_price_usd):'-'}</td><td>${t.unit_price_vnd?fmt(t.unit_price_vnd):'-'}</td>
-    <td>${esc(t.buyer||'-')}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.seller)}">${esc(t.seller||'-')}</td>
-  </tr>`).join('') || '<tr><td colspan="13" style="text-align:center;color:var(--text-3);padding:40px">No transactions yet.</td></tr>';
-  renderPagination('txPagination', data, loadTransactions);
-}
+// Orders
+const loadOrders=buildTablePage('orders','Order Tracking','/orders',[
+  {key:'order_date',label:'Date',type:'date'},{key:'rfq_no',label:'RFQ'},{key:'bqms_code',label:'BQMS'},
+  {key:'spec',label:'Spec',type:'trunc'},{key:'quantity_planned',label:'Planned',type:'number'},
+  {key:'quantity_ordered',label:'Ordered',type:'number'},{key:'status',label:'Status'},
+  {key:'quantity_delivered',label:'Delivered',type:'number'},{key:'delivery_date',label:'Del. Date',type:'date'}],false);
 
-// ── Users ──────────────────────────────────────────
-async function loadUsers() {
-  const data = await api('/users/');
-  if (!data) return;
-  document.getElementById('usersBody').innerHTML = data.data.map(u => `<tr>
-    <td>${esc(u.email)}</td><td>${esc(u.full_name)}</td>
-    <td><span class="badge badge-blue">${esc(u.role)}</span></td>
-    <td>${esc(u.department||'-')}</td>
-    <td>${u.is_active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Inactive</span>'}</td>
-    <td>${fmtDate(u.last_login)}</td>
-  </tr>`).join('');
-}
+// Users
+async function loadUsers(){const d=await api('/users/');if(!d)return;
+  document.getElementById('page-users').innerHTML=`<div class="card"><div class="card-header"><h3>User Management</h3></div>
+    <table><thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Department</th><th>Active</th><th>Last Login</th></tr></thead>
+    <tbody>${d.data.map(u=>`<tr><td>${esc(u.email)}</td><td>${esc(u.full_name)}</td><td><span class="badge badge-blue">${esc(u.role)}</span></td>
+      <td>${esc(u.department||'-')}</td><td>${u.is_active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Inactive</span>'}</td>
+      <td>${fmtD(u.last_login)}</td></tr>`).join('')}</tbody></table></div>`}
 
-// ── Audit ──────────────────────────────────────────
-let auditPage = 1;
-async function loadAudit(page) {
-  auditPage = page || 1;
-  const data = await api(`/audit-log?page=${auditPage}&limit=50`);
-  if (!data) return;
-  document.getElementById('auditBody').innerHTML = data.data.map(a => `<tr>
-    <td>${fmtDate(a.created_at)}</td><td>${esc(a.user_id||'-')}</td>
-    <td><span class="badge badge-blue">${esc(a.action)}</span></td>
-    <td>${esc(a.table_name)}</td><td>${esc(a.record_id||'-')}</td>
-  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:40px">No audit entries yet.</td></tr>';
-  renderPagination('auditPagination', data, loadAudit);
-}
+// Audit
+const loadAudit=buildTablePage('audit','Audit Log','/audit-log',[
+  {key:'created_at',label:'Time',type:'date'},{key:'user_id',label:'User'},{key:'action',label:'Action'},
+  {key:'table_name',label:'Table'},{key:'record_id',label:'Record'}],false);
 
-// ── Pagination ─────────────────────────────────────
-function renderPagination(containerId, data, loadFn) {
-  const el = document.getElementById(containerId);
-  if (!el || !data || data.pages <= 1) { if(el) el.innerHTML=''; return; }
-  let html = `<span class="info">${data.total} results</span>`;
-  for (let i = 1; i <= Math.min(data.pages, 10); i++) {
-    html += `<button class="${i===data.page?'active':''}" onclick="(${loadFn.name})(${i})">${i}</button>`;
-  }
-  el.innerHTML = html;
-}
-
-// ── Init ───────────────────────────────────────────
-if (TOKEN && USER) { showApp(); } else { document.getElementById('loginPage').classList.remove('hidden'); }
+// Init
+if(TOKEN&&USER){showApp()}else{document.getElementById('loginPage').classList.remove('hidden')}
 </script>
 </body>
 </html>
