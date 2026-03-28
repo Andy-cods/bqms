@@ -1,12 +1,10 @@
-"""ETL loader — runs on VPS host, reads JSON, inserts into PostgreSQL."""
+"""ETL loader — reads JSON, inserts into PostgreSQL with all 28 columns."""
 import asyncio
 import json
 import time
-import sys
-
-import asyncpg
 from datetime import date as Date
 
+import asyncpg
 
 DSN = "postgresql://scadmin:SC2026_Pr0d_S3cure!@127.0.0.1:5432/songchau"
 DATA_FILE = "/opt/songchau/data/etl_data.json"
@@ -16,17 +14,6 @@ def _clean(val):
     if val is None or val == "None" or val == "":
         return None
     return val
-
-
-def _date(val):
-    v = _clean(val)
-    if v is None:
-        return None
-    try:
-        parts = str(v)[:10].split("-")
-        return Date(int(parts[0]), int(parts[1]), int(parts[2]))
-    except (ValueError, IndexError):
-        return None
 
 
 def _float(val):
@@ -49,6 +36,17 @@ def _int(val):
         return None
 
 
+def _date(val):
+    v = _clean(val)
+    if v is None:
+        return None
+    try:
+        parts = str(v)[:10].split("-")
+        return Date(int(parts[0]), int(parts[1]), int(parts[2]))
+    except (ValueError, IndexError):
+        return None
+
+
 async def main():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         rows = json.load(f)
@@ -63,26 +61,45 @@ async def main():
         try:
             r = await conn.execute(
                 """INSERT INTO transactions
-                   (transaction_date, rfq_no, bqms_code, spec, maker,
-                    quantity, unit, price_rmb, price_vnd, price_quoted,
-                    version, result, person_in_charge, notes,
+                   (transaction_date, rfq_no, bqms_code, spec, description,
+                    type, maker, quantity, unit, deadline_text,
+                    import_date, bqms_import, desc_import, hs_code,
+                    unit2, qty2, price_quoted, unit_price_usd, unit_price_vnd,
+                    buyer, seller, supplier_alt, notes,
+                    price_rmb, price_vnd, version, result, person_in_charge,
                     source_file, source_sheet, source_row, row_hash)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
+                           $15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
+                           $29,$30,$31,$32)
                    ON CONFLICT (row_hash) DO NOTHING""",
                 _date(row.get("transaction_date")),
                 _clean(row.get("rfq_no")),
                 _clean(row.get("bqms_code")),
                 _clean(row.get("spec")),
+                _clean(row.get("description")),
+                _clean(row.get("type")),
                 _clean(row.get("maker")),
                 _float(row.get("quantity")),
                 _clean(row.get("unit")) or "EA",
+                _clean(row.get("deadline_text")),
+                _date(row.get("import_date")),
+                _clean(row.get("bqms_import")),
+                _clean(row.get("desc_import")),
+                _clean(row.get("hs_code")),
+                _clean(row.get("unit2")),
+                _float(row.get("qty2")),
+                _float(row.get("price_quoted")),
+                _float(row.get("unit_price_usd")),
+                _float(row.get("unit_price_vnd")),
+                _clean(row.get("buyer")),
+                _clean(row.get("seller")),
+                _clean(row.get("supplier_alt")),
+                _clean(row.get("notes")),
                 _float(row.get("price_rmb")),
                 _float(row.get("price_vnd")),
-                _float(row.get("price_quoted")),
                 _clean(row.get("version")),
                 _clean(row.get("result")),
-                (_clean(row.get("person_in_charge")) or "")[:200] or None,
-                (_clean(row.get("notes")) or "")[:500] or None,
+                _clean(row.get("person_in_charge")),
                 row.get("source_file"),
                 row.get("source_sheet"),
                 _int(row.get("source_row")),
@@ -110,15 +127,14 @@ async def main():
             COALESCE(t.spec, t.bqms_code),
             t.spec,
             t.maker,
-            CASE WHEN t.result = 'gc' THEN 'gc'
-                 WHEN t.result = 'tm' THEN 'tm'
-                 ELSE NULL END,
+            t.type,
             COALESCE(t.unit, 'EA')
         FROM transactions t
         WHERE t.bqms_code IS NOT NULL AND t.bqms_code != ''
         ON CONFLICT (bqms_code) DO UPDATE SET
             spec = COALESCE(EXCLUDED.spec, products.spec),
             maker = COALESCE(EXCLUDED.maker, products.maker),
+            type = COALESCE(EXCLUDED.type, products.type),
             updated_at = NOW()
     """)
     print(f"Products: {r}")
@@ -126,6 +142,15 @@ async def main():
     tc = await conn.fetchval("SELECT COUNT(*) FROM transactions")
     pc = await conn.fetchval("SELECT COUNT(*) FROM products")
     print(f"Final: {tc} transactions, {pc} products")
+
+    # Sample check
+    sample = await conn.fetchrow(
+        "SELECT rfq_no, bqms_code, spec, type, maker, unit, quantity, "
+        "unit_price_usd, unit_price_vnd, buyer, seller, deadline_text "
+        "FROM transactions WHERE type IS NOT NULL LIMIT 1"
+    )
+    if sample:
+        print(f"Sample: {dict(sample)}")
 
     await conn.close()
 

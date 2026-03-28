@@ -1,58 +1,49 @@
 """Extract transactions from TT XNK BQMS Excel files.
 
-Column mapping (from real file analysis):
+Full column mapping (28 columns A-AB):
   A: TT (row number)
   B: Ngay Thang (transaction date)
   C: Don hang (RFQ no, e.g. QT26000091)
-  D: BMSQ (BQMS code, e.g. Z0000001-709890)
+  D: BMSQ (BQMS code)
   E: Ten hang hoa (product name/spec)
-  F: Explain (description)
-  G: Loai hang (type: Thuong mai / Gia cong)
-  H: Maker (manufacturer)
-  I: Ghi chu (notes)
-  J: Ghi chu 2
+  F: Explain/Description
+  G: Loai hang (Thuong mai / Gia cong)
+  H: Maker
+  I: Ghi chu (note 1)
+  J: Ghi chu 2 (note 2)
   K: Don vi tinh (unit)
   L: So luong (quantity)
   M: Quote Deadline
-  N-Y: Import/export data columns
+  N: Ngay (import date)
+  O: BMSQ3 (import BQMS code)
+  P: Mieu ta hang hoa (import description)
+  Q: Ma HS (HS code)
+  R: DVT (import unit)
+  S: SL (import quantity)
+  T: Tong cong USD (total USD)
+  U: Don gia USD (unit price USD)
+  V: Don gia VND (unit price VND)
+  W: Ben mua (buyer: SEVT, SEV, etc.)
+  X: Ben ban (seller name)
+  Y: NCC khac / Ghi chu (DATA) or older year column
+  Z-AB: Year-specific columns (DATA sheet only)
 """
 
 import hashlib
+import os
 from datetime import datetime
 from typing import Optional
 
 import openpyxl
 
 
-# Columns to extract (0-indexed from column A)
-COL_MAP = {
-    "row_num": 0,       # A
-    "date": 1,          # B
-    "rfq_no": 2,        # C
-    "bqms_code": 3,     # D
-    "spec": 4,          # E
-    "description": 5,   # F
-    "type": 6,          # G
-    "maker": 7,         # H
-    "note1": 8,         # I
-    "note2": 9,         # J
-    "unit": 10,         # K
-    "quantity": 11,     # L
-    "deadline": 12,     # M
-    "import_date": 13,  # N
-    "bqms3": 14,        # O
-    "desc_import": 15,  # P
-    "hs_code": 16,      # Q
-    "unit2": 17,        # R
-    "qty2": 18,         # S
-    "total_usd": 19,    # T
-}
-
-
 def _str(v) -> str:
     if v is None:
         return ""
-    return str(v).replace("\xa0", " ").strip()
+    s = str(v).replace("\xa0", " ").strip()
+    if s in ("#VALUE!", "#REF!", "#N/A", "#DIV/0!"):
+        return ""
+    return s
 
 
 def _num(v) -> Optional[float]:
@@ -60,7 +51,9 @@ def _num(v) -> Optional[float]:
         return None
     if isinstance(v, (int, float)):
         return float(v)
-    s = str(v).replace(",", "").strip()
+    s = str(v).replace(",", "").replace("\xa0", "").strip()
+    if not s or s in ("#VALUE!", "#REF!"):
+        return None
     try:
         return float(s)
     except (ValueError, TypeError):
@@ -73,9 +66,16 @@ def _date(v) -> Optional[str]:
     if isinstance(v, datetime):
         return v.strftime("%Y-%m-%d")
     s = str(v).strip()
-    if not s:
+    if not s or len(s) < 6:
         return None
-    return s[:10]  # Best effort
+    return s[:10]
+
+
+def _cell(row: tuple, idx: int) -> any:
+    """Safe cell access."""
+    if idx < len(row):
+        return row[idx]
+    return None
 
 
 def _hash_row(rfq: str, bqms: str, date_str: str, spec: str) -> str:
@@ -93,19 +93,10 @@ def _classify_type(v: str) -> Optional[str]:
 
 
 def extract_file(filepath: str, sheets: list[str] | None = None) -> list[dict]:
-    """Extract transactions from a TT XNK BQMS file.
-
-    Args:
-        filepath: Path to .xlsm/.xlsx file
-        sheets: Sheet names to process. None = auto-detect (DATA + month sheets)
-
-    Returns:
-        List of transaction dicts ready for DB insert
-    """
+    """Extract all 28 columns from TT XNK BQMS file."""
     wb = openpyxl.load_workbook(filepath, read_only=True, data_only=True)
 
     if sheets is None:
-        # Process DATA sheet + monthly sheets (JAN, FEB, etc.)
         target_sheets = []
         for s in wb.sheetnames:
             sl = s.upper()
@@ -117,7 +108,6 @@ def extract_file(filepath: str, sheets: list[str] | None = None) -> list[dict]:
     else:
         target_sheets = sheets
 
-    import os
     source_file = os.path.basename(filepath)
     results = []
     seen_hashes = set()
@@ -125,52 +115,85 @@ def extract_file(filepath: str, sheets: list[str] | None = None) -> list[dict]:
     for sheet_name in target_sheets:
         ws = wb[sheet_name]
         row_idx = 0
+
         for row in ws.iter_rows(min_row=2, values_only=True):
             row_idx += 1
-            # Skip empty rows
             if not row or len(row) < 5:
                 continue
 
-            rfq = _str(row[COL_MAP["rfq_no"]] if len(row) > COL_MAP["rfq_no"] else None)
-            bqms = _str(row[COL_MAP["bqms_code"]] if len(row) > COL_MAP["bqms_code"] else None)
-            spec = _str(row[COL_MAP["spec"]] if len(row) > COL_MAP["spec"] else None)
+            rfq = _str(_cell(row, 2))       # C: Don hang
+            bqms = _str(_cell(row, 3))      # D: BMSQ
+            spec = _str(_cell(row, 4))      # E: Ten hang hoa
 
-            # Skip if no meaningful data
             if not rfq and not bqms and not spec:
                 continue
 
-            date_val = row[COL_MAP["date"]] if len(row) > COL_MAP["date"] else None
-            date_str = _date(date_val)
+            date_str = _date(_cell(row, 1))  # B: Ngay Thang
 
-            # Dedup by hash
             h = _hash_row(rfq, bqms, date_str or "", spec)
             if h in seen_hashes:
                 continue
             seen_hashes.add(h)
 
-            type_raw = _str(row[COL_MAP["type"]] if len(row) > COL_MAP["type"] else None)
-            maker = _str(row[COL_MAP["maker"]] if len(row) > COL_MAP["maker"] else None)
-            unit = _str(row[COL_MAP["unit"]] if len(row) > COL_MAP["unit"] else None)
-            qty = _num(row[COL_MAP["quantity"]] if len(row) > COL_MAP["quantity"] else None)
-            total_usd = _num(row[COL_MAP["total_usd"]] if len(row) > COL_MAP["total_usd"] else None)
-            note = _str(row[COL_MAP["note1"]] if len(row) > COL_MAP["note1"] else None)
-            desc = _str(row[COL_MAP["description"]] if len(row) > COL_MAP["description"] else None)
+            # Extract ALL columns
+            description = _str(_cell(row, 5))   # F
+            type_raw = _str(_cell(row, 6))      # G: Loai hang
+            maker = _str(_cell(row, 7))         # H
+            note1 = _str(_cell(row, 8))         # I: Ghi chu
+            note2 = _str(_cell(row, 9))         # J: Ghi chu 2
+            unit = _str(_cell(row, 10))         # K: DVT
+            qty = _num(_cell(row, 11))          # L: So luong
+            deadline = _str(_cell(row, 12))     # M: Quote Deadline
+            import_date = _date(_cell(row, 13)) # N: Ngay
+            bqms_import = _str(_cell(row, 14))  # O: BMSQ3
+            desc_import = _str(_cell(row, 15))  # P: Mieu ta hang hoa
+            hs_code = _str(_cell(row, 16))      # Q: Ma HS
+            unit2 = _str(_cell(row, 17))        # R: DVT import
+            qty2 = _num(_cell(row, 18))         # S: SL import
+            total_usd = _num(_cell(row, 19))    # T: Tong cong USD
+            unit_price_usd = _num(_cell(row, 20))  # U: Don gia USD
+            unit_price_vnd = _num(_cell(row, 21))   # V: Don gia VND
+            buyer = _str(_cell(row, 22))        # W: Ben mua
+            seller = _str(_cell(row, 23))       # X: Ben ban
+
+            # Y or AB: supplier alt / notes (varies by sheet)
+            supplier_alt = _str(_cell(row, 24))  # Y
+            if not supplier_alt and len(row) > 27:
+                supplier_alt = _str(_cell(row, 27))  # AB in DATA sheet
+
+            # Combine notes
+            notes_parts = [p for p in [note1, note2] if p]
+            notes = " | ".join(notes_parts) if notes_parts else None
 
             results.append({
                 "transaction_date": date_str,
-                "rfq_no": rfq,
-                "bqms_code": bqms,
+                "rfq_no": rfq[:100] if rfq else None,
+                "bqms_code": bqms[:100] if bqms else None,
                 "spec": spec[:500] if spec else None,
+                "description": description[:300] if description else None,
+                "type": _classify_type(type_raw) if type_raw else None,
                 "maker": maker[:200] if maker else None,
                 "quantity": qty,
-                "unit": unit or "EA",
-                "price_rmb": None,
-                "price_vnd": None,
+                "unit": unit[:20] if unit else "EA",
+                "deadline_text": deadline[:100] if deadline else None,
+                "import_date": import_date,
+                "bqms_import": bqms_import[:100] if bqms_import else None,
+                "desc_import": desc_import[:500] if desc_import else None,
+                "hs_code": hs_code[:20] if hs_code else None,
+                "unit2": unit2[:20] if unit2 else None,
+                "qty2": qty2,
                 "price_quoted": total_usd,
+                "unit_price_usd": unit_price_usd,
+                "unit_price_vnd": unit_price_vnd,
+                "buyer": buyer[:100] if buyer else None,
+                "seller": seller[:200] if seller else None,
+                "supplier_alt": supplier_alt[:300] if supplier_alt else None,
+                "notes": notes[:500] if notes else None,
+                "price_rmb": None,
+                "price_vnd": unit_price_vnd,
                 "version": None,
-                "result": _classify_type(type_raw) if type_raw else None,
-                "person_in_charge": desc[:200] if desc else None,
-                "notes": note[:500] if note else None,
+                "result": None,
+                "person_in_charge": None,
                 "source_file": source_file,
                 "source_sheet": sheet_name,
                 "source_row": row_idx + 1,
