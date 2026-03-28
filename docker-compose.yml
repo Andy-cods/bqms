@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: songchau
+      POSTGRES_USER: scadmin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "127.0.0.1:5432:5432"
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=512MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=128MB
+        -c max_connections=50
+        -c random_page_cost=1.1
+        -c log_min_duration_statement=500
+        -c wal_buffers=16MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scadmin -d songchau"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  api:
+    build: ./app
+    container_name: sc-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://scadmin:${POSTGRES_PASSWORD}@postgres:5432/songchau
+      JWT_SECRET: ${JWT_SECRET}
+      APP_ENV: production
+    volumes:
+      - ./data:/opt/songchau/data
+      - ./logs:/opt/songchau/logs
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  nginx:
+    image: nginx:alpine
+    container_name: sc-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+volumes:
+  pg_data:
