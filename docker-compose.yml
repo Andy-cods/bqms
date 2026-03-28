@@ -53,6 +53,19 @@ services:
         limits:
           memory: 384M
 
+  frontend:
+    build: ./frontend
+    container_name: sc-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
   nginx:
     image: nginx:alpine
     container_name: sc-nginx
@@ -63,6 +76,7 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - api
+      - frontend
     deploy:
       resources:
         limits:
